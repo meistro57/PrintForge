@@ -14,15 +14,17 @@ so independent work can proceed against it.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from printforge.book import Book
 
 
 @runtime_checkable
 class BookImporter(Protocol):
     """Reads a manuscript source **read-only** and returns a Book model."""
 
-    def load(self, book_dir: Path) -> Any:  # -> printforge.book.Book (#2)
-        ...
+    def load(self, book_dir: Path) -> Book: ...
 
 
 @runtime_checkable
