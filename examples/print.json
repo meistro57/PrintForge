@@ -49,5 +49,15 @@
     "background_color": "#1F2A44",
     "text_color": "#FFFFFF",
     "back_text": null
+  },
+  "layout": {
+    "chapter_start": "recto",
+    "part_pages": true,
+    "running_heads": true,
+    "folio_position": "bottom-center",
+    "front_matter_folios": "lower-roman",
+    "chapter_label": "Chapter",
+    "widows": 2,
+    "orphans": 2
   }
 }

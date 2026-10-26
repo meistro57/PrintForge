@@ -51,6 +51,21 @@ class Format(StrEnum):
     PAPERBACK = "paperback"
 
 
+class ChapterStart(StrEnum):
+    RECTO = "recto"  # chapters open on a right-hand (odd) page; blank verso inserted if needed
+    ANY = "any"  # chapters open on the next page
+
+
+class FolioPosition(StrEnum):
+    BOTTOM_CENTER = "bottom-center"
+    BOTTOM_OUTSIDE = "bottom-outside"
+
+
+class FrontFolios(StrEnum):
+    LOWER_ROMAN = "lower-roman"
+    NONE = "none"
+
+
 # ----------------------------------------------------------------- models
 
 
@@ -139,6 +154,18 @@ class CoverSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class LayoutSettings:
+    chapter_start: ChapterStart
+    part_pages: bool  # a divider page before each part
+    running_heads: bool  # verso: book title, recto: chapter title
+    folio_position: FolioPosition
+    front_matter_folios: FrontFolios
+    chapter_label: str | None  # e.g. "Chapter" -> "Chapter 3" above numbered chapter titles
+    widows: int
+    orphans: int
+
+
+@dataclass(frozen=True, slots=True)
 class OutputSettings:
     directory: str | None  # relative to the working directory; not in reproducible metadata
 
@@ -157,6 +184,7 @@ class PrintSettings:
     front_matter: FrontMatterSettings
     metadata: Metadata
     cover: CoverSettings
+    layout: LayoutSettings
     output: OutputSettings
 
     def to_dict(self) -> dict[str, Any]:
@@ -397,6 +425,16 @@ SCHEMA: dict[str, Any] = {
         "text_color": _text(pattern=_COLOR, hint=" (use #RRGGBB)"),
         "back_text": _text(optional=True),
     },
+    "layout": {
+        "chapter_start": _enum(ChapterStart),
+        "part_pages": _bool,
+        "running_heads": _bool,
+        "folio_position": _enum(FolioPosition),
+        "front_matter_folios": _enum(FrontFolios),
+        "chapter_label": _text(optional=True),
+        "widows": _int(1, 5),
+        "orphans": _int(1, 5),
+    },
     "output": {"directory": _text(optional=True)},
 }
 
@@ -451,6 +489,7 @@ def validate(merged: dict[str, Any], source_of: Callable[[str], str]) -> PrintSe
         front_matter=FrontMatterSettings(**clean["front_matter"]),
         metadata=Metadata(**clean["metadata"]),
         cover=CoverSettings(**clean["cover"]),
+        layout=LayoutSettings(**clean["layout"]),
         output=OutputSettings(**clean["output"]),
     )
 
