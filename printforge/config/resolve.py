@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from printforge.book import Book
-from printforge.config.defaults import PLATFORM_DEFAULTS, PROVIDER_DEFAULTS
+from printforge.config.defaults import PLATFORM_DEFAULTS
 from printforge.config.settings import SCHEMA_VERSION, PrintSettings, validate
 from printforge.errors import ConfigError
 
@@ -154,16 +154,16 @@ def resolve_print_job(
     else:
         config, digest, label, config_label, config_dir = {}, None, None, None, book.root
 
+    from printforge.providers import get_provider  # deferred: providers import config
+
     provider = _provider_name(cli, config)
-    if provider not in PROVIDER_DEFAULTS:
-        known = ", ".join(sorted(PROVIDER_DEFAULTS))
-        raise ConfigError(f"provider: unknown provider {provider!r} (supported: {known})")
+    provider_layer = get_provider(provider).default_settings()
 
     merged: dict[str, Any] = {}
     prov: dict[str, str] = {}
     layers = [LAYER_PLATFORM, f"provider defaults ({provider})"]
     _merge(merged, PLATFORM_DEFAULTS, LAYER_PLATFORM, prov)
-    _merge(merged, PROVIDER_DEFAULTS[provider], layers[1], prov)
+    _merge(merged, provider_layer, layers[1], prov)
     if label is not None:
         layers.append(label)
         _merge(merged, config, label, prov)
