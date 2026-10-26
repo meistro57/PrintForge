@@ -1,0 +1,53 @@
+{
+  "$comment": "PrintForge print settings (schema version 1). Place next to book.json or pass --config. Every key is optional; see docs/PRINT_JSON.md.",
+  "version": 1,
+  "provider": "kdp",
+  "format": "paperback",
+  "trim": { "width": "6in", "height": "9in" },
+  "interior": { "bleed": false, "ink": "black", "paper": "white" },
+  "margins": {
+    "top": "0.75in",
+    "bottom": "0.75in",
+    "outside": "0.625in",
+    "inside": "auto",
+    "gutter_extra": "0.125in"
+  },
+  "typography": {
+    "body_font": "DejaVu Serif",
+    "heading_font": "DejaVu Serif",
+    "mono_font": "DejaVu Sans Mono",
+    "font_size": "10.5pt",
+    "line_height": "1.4",
+    "paragraph_indent": "0.25in",
+    "justify": true,
+    "hyphenate": true,
+    "language": "en"
+  },
+  "images": { "min_dpi": 300 },
+  "toc": {
+    "enabled": true,
+    "depth": 1,
+    "title": "Contents",
+    "include_front_matter": false,
+    "include_parts": true
+  },
+  "front_matter": { "half_title": false, "title_page": true, "copyright_page": true },
+  "metadata": {
+    "language": "en",
+    "isbn": null,
+    "publisher": null,
+    "copyright_year": null,
+    "copyright_holder": null,
+    "edition": null
+  },
+  "cover": {
+    "finish": "matte",
+    "front_image": null,
+    "back_image": null,
+    "wrap_image": null,
+    "spine_text": "auto",
+    "background_color": "#1F2A44",
+    "text_color": "#FFFFFF",
+    "back_text": null
+  }
+}

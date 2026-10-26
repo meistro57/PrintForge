@@ -27,11 +27,14 @@ Linux native prerequisites for WeasyPrint are listed in
 python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
 printforge --help
+printforge settings tests/fixtures/minimal-book --trim 6x9   # resolved print settings (JSON)
 printforge build tests/fixtures/minimal-book --provider kdp
 pytest && ruff check .
 ```
 
 `tests/fixtures/minimal-book` is a small synthetic manuscript in BookForge layout.
+Print settings live in an optional `print.json` next to `book.json`; see
+[docs/PRINT_JSON.md](docs/PRINT_JSON.md) and [examples/print.json](examples/print.json).
 
 ## Status
 
