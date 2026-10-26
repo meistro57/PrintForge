@@ -1,0 +1,826 @@
+{
+ "chapters": [
+  {
+   "blocks": [
+    {
+     "children": [
+      {
+       "text": "A preface paragraph.",
+       "type": "Text"
+      }
+     ],
+     "line": 7,
+     "type": "Paragraph"
+    }
+   ],
+   "id": "01-preface",
+   "kind": "front-matter",
+   "number": null,
+   "part_number": null,
+   "part_title": null,
+   "slug": "01-preface",
+   "source": "chapters/01-preface.md",
+   "title": "Preface",
+   "type": "DocChapter"
+  },
+  {
+   "blocks": [
+    {
+     "children": [
+      {
+       "text": "This is a deliberately long paragraph that keeps going so that the layout engine has something substantial to break across lines; it contains ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "emphasis",
+         "type": "Text"
+        }
+       ],
+       "type": "Emphasis"
+      },
+      {
+       "text": ", ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "strong text",
+         "type": "Text"
+        }
+       ],
+       "type": "Strong"
+      },
+      {
+       "text": ", ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "",
+         "type": "Text"
+        },
+        {
+         "children": [
+          {
+           "text": "both at once",
+           "type": "Text"
+          }
+         ],
+         "type": "Strong"
+        },
+        {
+         "text": "",
+         "type": "Text"
+        }
+       ],
+       "type": "Emphasis"
+      },
+      {
+       "text": ", ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "struck text",
+         "type": "Text"
+        }
+       ],
+       "type": "Strikethrough"
+      },
+      {
+       "text": ", ",
+       "type": "Text"
+      },
+      {
+       "text": "inline code",
+       "type": "InlineCode"
+      },
+      {
+       "text": ", a ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "web link",
+         "type": "Text"
+        }
+       ],
+       "href": "https://example.com/path?q=1",
+       "type": "Link"
+      },
+      {
+       "text": ", a ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "mail link",
+         "type": "Text"
+        }
+       ],
+       "href": "mailto:author@example.com",
+       "type": "Link"
+      },
+      {
+       "text": ", an ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "internal link",
+         "type": "Text"
+        }
+       ],
+       "href": "#blocks-inlines",
+       "type": "Link"
+      },
+      {
+       "text": ", and a line that ends with a hard break",
+       "type": "Text"
+      },
+      {
+       "type": "LineBreak"
+      },
+      {
+       "text": "right here. It continues with soft",
+       "type": "Text"
+      },
+      {
+       "type": "SoftBreak"
+      },
+      {
+       "text": "line breaks too.",
+       "type": "Text"
+      }
+     ],
+     "line": 11,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "Lists",
+       "type": "Text"
+      }
+     ],
+     "id": "02-blocks--lists",
+     "level": 2,
+     "line": 15,
+     "type": "Heading"
+    },
+    {
+     "items": [
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "first item",
+           "type": "Text"
+          }
+         ],
+         "line": 17,
+         "type": "Paragraph"
+        }
+       ],
+       "type": "ListItem"
+      },
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "second item with ",
+           "type": "Text"
+          },
+          {
+           "children": [
+            {
+             "text": "bold",
+             "type": "Text"
+            }
+           ],
+           "type": "Strong"
+          },
+          {
+           "text": "",
+           "type": "Text"
+          }
+         ],
+         "line": 18,
+         "type": "Paragraph"
+        },
+        {
+         "items": [
+          {
+           "blocks": [
+            {
+             "children": [
+              {
+               "text": "nested bullet",
+               "type": "Text"
+              }
+             ],
+             "line": 19,
+             "type": "Paragraph"
+            },
+            {
+             "items": [
+              {
+               "blocks": [
+                {
+                 "children": [
+                  {
+                   "text": "deeply nested ordered",
+                   "type": "Text"
+                  }
+                 ],
+                 "line": 20,
+                 "type": "Paragraph"
+                }
+               ],
+               "type": "ListItem"
+              },
+              {
+               "blocks": [
+                {
+                 "children": [
+                  {
+                   "text": "another",
+                   "type": "Text"
+                  }
+                 ],
+                 "line": 21,
+                 "type": "Paragraph"
+                }
+               ],
+               "type": "ListItem"
+              }
+             ],
+             "line": 20,
+             "ordered": true,
+             "start": 1,
+             "tight": true,
+             "type": "ListBlock"
+            }
+           ],
+           "type": "ListItem"
+          }
+         ],
+         "line": 19,
+         "ordered": false,
+         "start": 1,
+         "tight": true,
+         "type": "ListBlock"
+        }
+       ],
+       "type": "ListItem"
+      },
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "third item",
+           "type": "Text"
+          }
+         ],
+         "line": 22,
+         "type": "Paragraph"
+        }
+       ],
+       "type": "ListItem"
+      }
+     ],
+     "line": 17,
+     "ordered": false,
+     "start": 1,
+     "tight": true,
+     "type": "ListBlock"
+    },
+    {
+     "items": [
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "starts at three",
+           "type": "Text"
+          }
+         ],
+         "line": 24,
+         "type": "Paragraph"
+        }
+       ],
+       "type": "ListItem"
+      },
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "then four",
+           "type": "Text"
+          }
+         ],
+         "line": 25,
+         "type": "Paragraph"
+        }
+       ],
+       "type": "ListItem"
+      }
+     ],
+     "line": 24,
+     "ordered": true,
+     "start": 3,
+     "tight": true,
+     "type": "ListBlock"
+    },
+    {
+     "children": [
+      {
+       "text": "Quotes and code",
+       "type": "Text"
+      }
+     ],
+     "id": "02-blocks--quotes-and-code",
+     "level": 2,
+     "line": 27,
+     "type": "Heading"
+    },
+    {
+     "blocks": [
+      {
+       "children": [
+        {
+         "text": "A block quote with ",
+         "type": "Text"
+        },
+        {
+         "children": [
+          {
+           "text": "emphasis",
+           "type": "Text"
+          }
+         ],
+         "type": "Emphasis"
+        },
+        {
+         "text": ".",
+         "type": "Text"
+        }
+       ],
+       "line": 29,
+       "type": "Paragraph"
+      },
+      {
+       "blocks": [
+        {
+         "children": [
+          {
+           "text": "A nested quote.",
+           "type": "Text"
+          }
+         ],
+         "line": 31,
+         "type": "Paragraph"
+        }
+       ],
+       "line": 31,
+       "type": "BlockQuote"
+      }
+     ],
+     "line": 29,
+     "type": "BlockQuote"
+    },
+    {
+     "language": "python",
+     "line": 33,
+     "text": "def hello():\n    return \"<not html>\"\n",
+     "type": "CodeBlock"
+    },
+    {
+     "language": null,
+     "line": 38,
+     "text": "indented code block\n",
+     "type": "CodeBlock"
+    },
+    {
+     "line": 40,
+     "type": "ThematicBreak"
+    },
+    {
+     "children": [
+      {
+       "text": "Table",
+       "type": "Text"
+      }
+     ],
+     "id": "02-blocks--table",
+     "level": 2,
+     "line": 42,
+     "type": "Heading"
+    },
+    {
+     "body": [
+      [
+       {
+        "align": "left",
+        "children": [
+         {
+          "text": "a",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "center",
+        "children": [
+         {
+          "text": "b",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "right",
+        "children": [
+         {
+          "text": "c",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       }
+      ],
+      [
+       {
+        "align": "left",
+        "children": [
+         {
+          "text": "x",
+          "type": "InlineCode"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "center",
+        "children": [
+         {
+          "text": "",
+          "type": "Text"
+         },
+         {
+          "children": [
+           {
+            "text": "y",
+            "type": "Text"
+           }
+          ],
+          "type": "Strong"
+         },
+         {
+          "text": "",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "right",
+        "children": [
+         {
+          "children": [
+           {
+            "text": "z",
+            "type": "Text"
+           }
+          ],
+          "href": "https://example.org",
+          "type": "Link"
+         }
+        ],
+        "type": "TableCell"
+       }
+      ]
+     ],
+     "header": [
+      [
+       {
+        "align": "left",
+        "children": [
+         {
+          "text": "Left",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "center",
+        "children": [
+         {
+          "text": "Center",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       },
+       {
+        "align": "right",
+        "children": [
+         {
+          "text": "Right",
+          "type": "Text"
+         }
+        ],
+        "type": "TableCell"
+       }
+      ]
+     ],
+     "line": 44,
+     "type": "Table"
+    },
+    {
+     "children": [
+      {
+       "text": "Lists",
+       "type": "Text"
+      }
+     ],
+     "id": "02-blocks--lists-2",
+     "level": 2,
+     "line": 49,
+     "type": "Heading"
+    },
+    {
+     "children": [
+      {
+       "text": "Duplicate heading text gets a unique id.",
+       "type": "Text"
+      }
+     ],
+     "line": 51,
+     "type": "Paragraph"
+    }
+   ],
+   "id": "02-blocks",
+   "kind": "chapter",
+   "number": 1,
+   "part_number": 1,
+   "part_title": "PART I: STRUCTURE",
+   "slug": "02-blocks",
+   "source": "chapters/02-blocks.md",
+   "title": "Blocks & Inlines",
+   "type": "DocChapter"
+  },
+  {
+   "blocks": [
+    {
+     "image": {
+      "alt": "A local diagram",
+      "relative_path": "images/diagram.png",
+      "source": "../images/diagram.png",
+      "title": "Diagram title",
+      "type": "Image"
+     },
+     "line": 9,
+     "type": "Figure"
+    },
+    {
+     "children": [
+      {
+       "text": "Inline image ",
+       "type": "Text"
+      },
+      {
+       "alt": "tiny",
+       "relative_path": "images/diagram.png",
+       "source": "../images/diagram.png",
+       "title": null,
+       "type": "Image"
+      },
+      {
+       "text": " inside text.",
+       "type": "Text"
+      }
+     ],
+     "line": 11,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "Straight \"quotes\" and 'apostrophes', curly “quotes” and ‘apostrophes’ — em dash, – en dash, ellipsis…, non-breaking space here, Unicode: café, naïve, Ελληνικά, 日本語, emoji 📖, math ≤ ≥ ×.",
+       "type": "Text"
+      }
+     ],
+     "line": 13,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "Fake front matter inside the body stays text:",
+       "type": "Text"
+      }
+     ],
+     "line": 15,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "title: not metadata",
+       "type": "Text"
+      }
+     ],
+     "line": 17,
+     "type": "Paragraph"
+    }
+   ],
+   "id": "03-media",
+   "kind": "chapter",
+   "number": 2,
+   "part_number": 1,
+   "part_title": "PART I: STRUCTURE",
+   "slug": "03-media",
+   "source": "chapters/03-media.md",
+   "title": "Images and Punctuation",
+   "type": "DocChapter"
+  },
+  {
+   "blocks": [
+    {
+     "children": [
+      {
+       "text": "<script>alert(\"x\")</script>",
+       "type": "Text"
+      }
+     ],
+     "line": 6,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "Inline <span onclick=\"evil()\">html</span> and a break",
+       "type": "Text"
+      },
+      {
+       "type": "LineBreak"
+      },
+      {
+       "text": "here.",
+       "type": "Text"
+      }
+     ],
+     "line": 8,
+     "type": "Paragraph"
+    },
+    {
+     "children": [
+      {
+       "text": "[js link](javascript:alert(1)) and [file link](file:///etc/passwd) and ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "ftp link",
+         "type": "Text"
+        }
+       ],
+       "href": null,
+       "type": "Link"
+      },
+      {
+       "text": " and ",
+       "type": "Text"
+      },
+      {
+       "children": [
+        {
+         "text": "phone",
+         "type": "Text"
+        }
+       ],
+       "href": null,
+       "type": "Link"
+      },
+      {
+       "text": ".",
+       "type": "Text"
+      }
+     ],
+     "line": 12,
+     "type": "Paragraph"
+    }
+   ],
+   "id": "04-appendix-a",
+   "kind": "appendix",
+   "number": null,
+   "part_number": null,
+   "part_title": null,
+   "slug": "04-appendix-a",
+   "source": "chapters/04-appendix-a.md",
+   "title": "Appendix A: Unsafe Input",
+   "type": "DocChapter"
+  },
+  {
+   "blocks": [
+    {
+     "children": [
+      {
+       "text": "Back matter after the appendix.",
+       "type": "Text"
+      }
+     ],
+     "line": 6,
+     "type": "Paragraph"
+    }
+   ],
+   "id": "05-afterword",
+   "kind": "back-matter",
+   "number": null,
+   "part_number": null,
+   "part_title": null,
+   "slug": "05-afterword",
+   "source": "chapters/05-afterword.md",
+   "title": "Afterword",
+   "type": "DocChapter"
+  }
+ ],
+ "diagnostics": [
+  {
+   "context": "chapters/02-blocks.md",
+   "message": "leading heading repeats the chapter title; typeset once by the chapter opener",
+   "rule_id": "DOC-DUP-TITLE",
+   "severity": "INFO",
+   "suggestion": null,
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:6",
+   "message": "raw HTML block is printed literally, not interpreted",
+   "rule_id": "DOC-RAW-HTML",
+   "severity": "WARNING",
+   "suggestion": "replace the HTML with Markdown",
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:8",
+   "message": "inline HTML '<span onclick=\"evil()\">' is printed literally, not interpreted",
+   "rule_id": "DOC-RAW-HTML",
+   "severity": "WARNING",
+   "suggestion": "replace the HTML with Markdown",
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:8",
+   "message": "inline HTML '</span>' is printed literally, not interpreted",
+   "rule_id": "DOC-RAW-HTML",
+   "severity": "WARNING",
+   "suggestion": "replace the HTML with Markdown",
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:10",
+   "message": "HTML comment omitted from print",
+   "rule_id": "DOC-HTML-COMMENT",
+   "severity": "INFO",
+   "suggestion": null,
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:12",
+   "message": "link target 'ftp://example.com/x' removed (only http, https, mailto and # are kept)",
+   "rule_id": "DOC-UNSAFE-LINK",
+   "severity": "WARNING",
+   "suggestion": null,
+   "type": "Diagnostic"
+  },
+  {
+   "context": "chapters/04-appendix-a.md:12",
+   "message": "link target 'tel:+15550100' removed (only http, https, mailto and # are kept)",
+   "rule_id": "DOC-UNSAFE-LINK",
+   "severity": "WARNING",
+   "suggestion": null,
+   "type": "Diagnostic"
+  }
+ ],
+ "title": "Markdown Coverage",
+ "type": "Document"
+}
