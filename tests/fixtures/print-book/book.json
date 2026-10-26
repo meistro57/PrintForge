@@ -1,0 +1,11 @@
+{
+  "slug": "print-book",
+  "title": "The Printer's Field Guide",
+  "author": "PrintForge Fixtures",
+  "subtitle": "A Synthetic Manuscript for Print Testing",
+  "description": "A generated, copyright-free manuscript used to test PrintForge builds.",
+  "order": 1,
+  "theme": {
+    "mood": "ignored for print"
+  }
+}
