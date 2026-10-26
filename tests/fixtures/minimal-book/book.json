@@ -1,0 +1,8 @@
+{
+  "slug": "minimal-book",
+  "title": "A Minimal Book",
+  "author": "PrintForge Test Fixtures",
+  "subtitle": "An offline fixture for the quick-start",
+  "description": "Synthetic two-chapter manuscript used by the PrintForge test suite.",
+  "order": 1
+}

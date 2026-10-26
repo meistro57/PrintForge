@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "printforge"
+version = "0.1.0.dev0"
+description = "Convert Markdown manuscripts (BookForge convention) into print-on-demand book files, starting with Amazon KDP paperback."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "PrintForge contributors" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Printing",
+]
+# Working stack (issue #1). Compatible-release pins: patch/minor updates within
+# the tested series only. The renderer is isolated behind
+# printforge.interfaces.Renderer so WeasyPrint can be swapped later.
+dependencies = [
+    "markdown-it-py~=4.2",
+    "PyYAML~=6.0",
+    "weasyprint~=70.0",
+    "pypdf~=6.21",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=9.1",
+    "ruff==0.17.2",
+]
+
+[project.scripts]
+printforge = "printforge.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["printforge*"]
+
+[tool.setuptools.package-data]
+printforge = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "pdf: tests that render real PDFs with WeasyPrint (need native Pango libraries)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
