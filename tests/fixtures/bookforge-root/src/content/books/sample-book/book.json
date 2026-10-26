@@ -1,0 +1,11 @@
+{
+  "slug": "sample-book",
+  "title": "The Sample Book",
+  "author": "A. N. Author",
+  "subtitle": "A Synthetic Manuscript",
+  "description": "A synthetic BookForge-style manuscript for PrintForge tests.",
+  "cover": "images/web-cover.png",
+  "order": 1,
+  "theme": { "mood": "parchment" },
+  "audiobook": { "enabled": false }
+}
