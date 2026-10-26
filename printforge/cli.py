@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 
 from printforge import __version__
+from printforge.config import resolve_print_job
+from printforge.config.cli_overrides import add_settings_arguments, overrides_from_args
 from printforge.errors import ExitCode, NotImplementedYetError, PrintForgeError
+from printforge.importer import load_book
 from printforge.log import configure, get_logger
 
 log = get_logger("cli")
@@ -36,6 +40,14 @@ def _cmd_build(args: argparse.Namespace) -> int:
     )
 
 
+def _cmd_settings(args: argparse.Namespace) -> int:
+    book = load_book(args.book_dir)
+    job = resolve_print_job(book, config_path=args.config, cli_overrides=overrides_from_args(args))
+    json.dump(job.to_dict(), sys.stdout, indent=2, sort_keys=False)
+    sys.stdout.write("\n")
+    return int(ExitCode.OK)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="printforge",
@@ -59,6 +71,18 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("book_dir", type=Path, help="directory containing book.json")
     build.add_argument("--provider", default="kdp", choices=["kdp"], help="POD provider profile")
     build.set_defaults(func=_cmd_build)
+
+    settings = sub.add_parser(
+        "settings",
+        help="print the resolved print settings for a book as JSON",
+        description=(
+            "Resolve print settings (platform defaults < provider defaults < print.json "
+            "< command-line flags), validate them, and print the result as JSON."
+        ),
+    )
+    settings.add_argument("book_dir", type=Path, help="directory containing book.json")
+    add_settings_arguments(settings)
+    settings.set_defaults(func=_cmd_settings)
     return parser
 
 
