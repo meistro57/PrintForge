@@ -71,11 +71,5 @@ PLATFORM_DEFAULTS: dict[str, Any] = {
     "output": {"directory": None},
 }
 
-# Provider default layers (KDP paperback: 6x9 in, black ink, white paper, no bleed).
-PROVIDER_DEFAULTS: dict[str, dict[str, Any]] = {
-    "kdp": {
-        "format": "paperback",
-        "trim": {"width": "6in", "height": "9in"},
-        "interior": {"bleed": False, "ink": "black", "paper": "white"},
-    },
-}
+# Provider default layers come from each provider's default_settings()
+# (printforge/providers/), e.g. KDP: paperback, 6x9 in, black ink, white paper, no bleed.

@@ -14,6 +14,7 @@ from printforge.config.cli_overrides import add_settings_arguments, overrides_fr
 from printforge.errors import ExitCode, NotImplementedYetError, PrintForgeError
 from printforge.importer import load_book
 from printforge.log import configure, get_logger
+from printforge.providers import provider_names
 
 log = get_logger("cli")
 
@@ -69,7 +70,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="Build print files for a book directory. NOT IMPLEMENTED YET (issue #10).",
     )
     build.add_argument("book_dir", type=Path, help="directory containing book.json")
-    build.add_argument("--provider", default="kdp", choices=["kdp"], help="POD provider profile")
+    build.add_argument(
+        "--provider", default="kdp", choices=provider_names(), help="POD provider profile"
+    )
     build.set_defaults(func=_cmd_build)
 
     settings = sub.add_parser(
