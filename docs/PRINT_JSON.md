@@ -65,6 +65,13 @@ given (up to 6 decimal places).
 | `cover.spine_text` | `auto` (only when the provider allows it), `never`, `always` (fail if not allowed) | `auto` |
 | `cover.background_color`, `.text_color` | `#RRGGBB` | `#1F2A44`, `#FFFFFF` |
 | `cover.back_text` | string or null (defaults to the description) | `null` |
+| `layout.chapter_start` | `recto` (chapters open on a right-hand page; a blank verso is inserted when needed) or `any` | `recto` |
+| `layout.part_pages` | boolean: a divider page (always recto) before each part | `true` |
+| `layout.running_heads` | boolean: verso = book title, recto = chapter title; never on openers, blank or front-matter pages | `true` |
+| `layout.folio_position` | `bottom-center`, `bottom-outside` | `bottom-center` |
+| `layout.front_matter_folios` | `lower-roman` (i, ii, ...) or `none` | `lower-roman` |
+| `layout.chapter_label` | string or null: label above numbered chapter titles ("Chapter 3") | `Chapter` |
+| `layout.widows`, `layout.orphans` | integer, 1–5: minimum lines kept together at page breaks | `2`, `2` |
 | `output.directory` | output directory, relative to the current working directory | `null` |
 
 PrintForge never invents legal or identifying metadata. If ISBN, copyright year,

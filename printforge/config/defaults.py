@@ -68,6 +68,16 @@ PLATFORM_DEFAULTS: dict[str, Any] = {
         "text_color": "#FFFFFF",
         "back_text": None,
     },
+    "layout": {
+        "chapter_start": "recto",
+        "part_pages": True,
+        "running_heads": True,
+        "folio_position": "bottom-center",
+        "front_matter_folios": "lower-roman",
+        "chapter_label": "Chapter",
+        "widows": 2,
+        "orphans": 2,
+    },
     "output": {"directory": None},
 }
 
