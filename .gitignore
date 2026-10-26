@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PrintForge: never commit generated print artifacts
+*.pdf
+/out/
+/output/
