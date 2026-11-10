@@ -40,9 +40,10 @@ Print settings live in an optional `print.json` next to `book.json`; see
 
 Early development — see the [v0.1 roadmap (#14)](https://github.com/meistro57/PrintForge/issues/14)
 and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The interior PDF renderer, generated
-front matter and a table of contents with real page numbers are implemented
-([docs/RENDERING.md](docs/RENDERING.md), [docs/FRONT_MATTER.md](docs/FRONT_MATTER.md)),
-but `printforge build` is still a placeholder that exits with code 9 and writes
+front matter, a table of contents with real page numbers and full-wrap cover output
+are implemented ([docs/RENDERING.md](docs/RENDERING.md),
+[docs/FRONT_MATTER.md](docs/FRONT_MATTER.md), [docs/COVER.md](docs/COVER.md)), but
+`printforge build` is still a placeholder that exits with code 9 and writes
 nothing.
 
 ## License

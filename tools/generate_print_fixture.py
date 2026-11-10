@@ -197,6 +197,13 @@ def main() -> None:
     draw.line([750, 40, 750, 710], fill=0, width=8)
     img.save(ROOT / "images" / "spread.png", optimize=True)
 
+    cover = Image.new("RGB", (4000, 3000), (31, 42, 68))
+    cover_draw = ImageDraw.Draw(cover)
+    cover_draw.rectangle([120, 120, 3880, 2880], outline=(255, 255, 255), width=12)
+    for y in range(400, 2600, 200):
+        cover_draw.line([400, y, 3600, y], fill=(200, 200, 210), width=8)
+    cover.save(ROOT / "images" / "cover.jpg", quality=82, optimize=True)
+
 
 if __name__ == "__main__":
     main()

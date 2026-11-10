@@ -51,6 +51,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+# ...but the PrintForge cover package is source, not coverage output.
+!printforge/cover/
+!printforge/cover/*.py
 
 # Translations
 *.mo

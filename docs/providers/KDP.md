@@ -1,6 +1,8 @@
 # Amazon KDP paperback profile (`--provider kdp`)
 
 Implementation: [`printforge/providers/kdp.py`](../../printforge/providers/kdp.py).
+These rules drive the full-wrap cover geometry described in
+[docs/COVER.md](../COVER.md).
 Every number comes from Amazon's official KDP help pages, **last checked 2026-10-26**.
 KDP changes these rules from time to time. Re-verify them before a production run, and
 when you change a value, update `CHECKED` in the module.

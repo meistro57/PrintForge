@@ -75,6 +75,7 @@ book dir (read-only source)
 | `printforge/providers/` | Registry + `base.py` contract + `kdp.py` rules |
 | `printforge/layout/` | Page geometry, section policies, gutter convergence, CSS |
 | `printforge/render/` | HTML contract, front matter/contents, WeasyPrint adapter, PDF facts |
+| `printforge/cover/` | Full-wrap cover geometry, `cover-spec.json`, `cover.pdf` |
 | `printforge/fsutil.py` | Atomic file writes (temp file + `os.replace`, creates parents) |
 | `printforge/units.py` | `Length`: exact rational inches, unit-required parsing |
 | `printforge/errors.py` | Exception hierarchy mapped to stable exit codes |
@@ -177,21 +178,32 @@ doc = parse_book(load_book(path))
 result = build_interior_pdf(
     doc, job.settings, get_provider("kdp"), Path("interior.pdf"), metadata=job.metadata
 )
+cover = build_cover(
+    job.settings,
+    get_provider("kdp"),
+    result.page_count,  # always the finished interior page count
+    pdf_path=Path("cover.pdf"),
+    spec_path=Path("cover-spec.json"),
+    metadata=job.metadata,
+    config_dir=job.config_dir,
+)
 ```
 
 `build_interior_pdf` generates front matter + contents and resolves folios with a
 bounded multipass loop; `InteriorPdfBuilder.render` is the single-pass primitive
-(take a `LayoutPlan`, no front matter) used by tests and by that loop.
+(take a `LayoutPlan`, no front matter) used by tests and by that loop. The cover
+must take its page count from `result.page_count`.
 
 ## Testing
 
 - Tests are per-stage: `test_importer`, `test_settings`, `test_document`, `test_kdp`,
   `test_layout`, `test_units`, `test_render_html`, `test_frontmatter`,
-  `test_interior`, plus contract tests in `test_conventions.py`.
+  `test_interior`, `test_cover`, plus contract tests in `test_conventions.py`.
 - Fixtures in `tests/fixtures/`: `minimal-book` (quick start), `markdown-book` (parser
   coverage + golden snapshot), `bookforge-root` (multi-book checkout layout),
-  `print-book` (generated 45-page manuscript plus `print.json` metadata for real PDF
-  renders). Tests that mutate a book copy it to `tmp_path` first (`shutil.copytree`).
+  `print-book` (generated 45-page manuscript plus `print.json` metadata and cover
+  artwork for real PDF renders). Tests that mutate a book copy it to `tmp_path`
+  first (`shutil.copytree`).
 - `conftest.py` exposes `fixtures_dir` and `minimal_book`; tests frequently build
   settings with `resolve_print_job(load_book(path), cli_overrides={...}).settings`.
 - Test rule IDs and exact user-facing messages rather than tracebacks; assert exit

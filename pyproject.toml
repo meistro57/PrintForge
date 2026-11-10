@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "printforge"
-version = "0.1.0.dev3"
+version = "0.1.0.dev4"
 description = "Convert Markdown manuscripts (BookForge convention) into print-on-demand book files, starting with Amazon KDP paperback."
 readme = "README.md"
 license = { text = "MIT" }
