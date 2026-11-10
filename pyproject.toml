@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "printforge"
-version = "0.1.0.dev0"
+version = "0.1.0.dev1"
 description = "Convert Markdown manuscripts (BookForge convention) into print-on-demand book files, starting with Amazon KDP paperback."
 readme = "README.md"
 license = { text = "MIT" }
@@ -26,6 +26,11 @@ dependencies = [
     "PyYAML~=6.0",
     "weasyprint~=70.0",
     "pypdf~=6.21",
+    # Direct imports in printforge.render: image DPI checks (Pillow) and
+    # reproducible embedded fonts (fontTools). Both ship with WeasyPrint, but
+    # they are declared because PrintForge imports them itself.
+    "Pillow~=13.0",
+    "fonttools~=4.68",
 ]
 
 [project.optional-dependencies]

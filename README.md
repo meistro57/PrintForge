@@ -39,8 +39,9 @@ Print settings live in an optional `print.json` next to `book.json`; see
 ## Status
 
 Early development — see the [v0.1 roadmap (#14)](https://github.com/meistro57/PrintForge/issues/14)
-and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The `build` command is currently a
-placeholder that exits with code 9 and writes nothing.
+and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The interior PDF renderer is
+implemented ([docs/RENDERING.md](docs/RENDERING.md)), but `printforge build` is still
+a placeholder that exits with code 9 and writes nothing.
 
 ## License
 

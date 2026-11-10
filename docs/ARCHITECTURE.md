@@ -40,30 +40,37 @@ BookForge stays untouched:
 ## Directory layout (proposed)
 
     PrintForge/
-      cli/                    # entrypoint: python -m printforge ...
       printforge/
-        book.py               # Book model: load book.json + ordered chapters
-        chapter.py            # front-matter parsing + body
+        cli.py                # entrypoint: printforge / python -m printforge
+        book.py               # Book/Chapter models (book.json + ordered chapters)
         importer/             # reads BookForge source (import-only, never mutates)
-        layout/               # pagination, typography, page geometry
-        render/               # markdown -> interior pages
-        publisher/            # publishing engine (interior pdf, cover spec, manifest)
-        providers/            # provider profiles: kdp.py (first), bookvault.py (later)
+        document/             # Markdown -> provider-neutral semantic Document
+        config/               # print.json schema, defaults, layered resolution
+        providers/            # provider profiles: kdp.py (first), later vendors
+        layout/               # pagination, typography, page geometry, CSS
+        render/               # semantic document + plan -> interior PDF
+        units.py              # exact lengths; fsutil.py atomic writes; errors.py, diagnostics.py, log.py
       docs/ARCHITECTURE.md    # this file
+      docs/RENDERING.md       # renderer contract, determinism, diagnostics
       tests/
 
 ## Modules
 
 1. **CLI** — printforge build <book_dir> --provider kdp (and --provider bookvault).
-   Discovers books by the same glob convention as BookForge.
+   Discovers books by the same glob convention as BookForge. Only `settings` is
+   implemented so far; `build` is wired by the publishing engine (#10).
 
-2. **Publishing engine** (publisher/) — orchestrates: load book, resolve print
-   profile, paginate, typeset, render interior, render cover, emit provider
-   manifest. Provider-agnostic core.
+2. **Publishing engine** (to be added with #10) — orchestrates: load book,
+   resolve print profile, parse, paginate, render interior, render cover, emit
+   provider manifest. Provider-agnostic core.
 
 3. **Provider profiles** (providers/) — pluggable. Each provider contributes its
    trim/bleed/margin constraints, cover template, and metadata schema. Start with
    Amazon KDP (kdp.py); Bookvault, IngramSpark, Lulu as later providers.
+
+4. **Renderer** (render/) — semantic document plus layout plan to a single-page
+   interior PDF, with measured page count and heading locations. See
+   [docs/RENDERING.md](RENDERING.md).
 
 ## Data flow
 
@@ -95,8 +102,13 @@ BookForge stays untouched:
 
 - [x] Repo created (README, MIT, .gitignore)
 - [x] Architecture documented
-- [ ] Importer (read BookForge convention)
-- [ ] Layout/typography engine
-- [ ] KDP publisher profile
-- [ ] Interior PDF + cover spec output
+- [x] Importer (read BookForge convention)
+- [x] Print settings, print.json schema and resolution
+- [x] Semantic document model and Markdown parsing
+- [x] KDP publisher profile
+- [x] Layout/typography engine
+- [x] Interior PDF rendering
+- [ ] Cover spec output (full-wrap cover.pdf)
+- [ ] Title/front matter and table of contents generation
+- [ ] Preflight report and publishing engine / build CLI
 

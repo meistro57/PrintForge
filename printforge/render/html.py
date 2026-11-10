@@ -3,6 +3,10 @@
 All text is HTML-escaped; nothing from the manuscript is ever emitted as markup.
 Images are referenced by ``file://`` URIs of already-resolved local paths and
 the set of those paths is returned so the renderer can allow exactly those.
+
+The build also returns the stable IDs of every chapter, part and Markdown heading
+in document order, so the renderer can report where each one landed for the
+table of contents (#8).
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ from printforge.document.model import (
     Text,
     ThematicBreak,
 )
+from printforge.document.parse import slugify
 from printforge.errors import RenderError
 
 
@@ -44,17 +49,33 @@ def esc(text: str) -> str:
     return escape(text, quote=True)
 
 
-@dataclass
+def number_text(value: int | float) -> str:
+    """Format a chapter/part number without a spurious ``.0``."""
+    return str(int(value)) if float(value).is_integer() else str(value)
+
+
+@dataclass(frozen=True, slots=True)
+class HeadingAnchor:
+    """A stable element ID and the text/level it belongs to, in document order."""
+
+    id: str
+    text: str
+    level: int
+
+
+@dataclass(frozen=True, slots=True)
 class HtmlBuild:
     html: str
     assets: frozenset[Path]
     unit_ids: tuple[str, ...]  # ids of top-level units in order (sections)
     first_main_id: str | None
+    anchors: tuple[HeadingAnchor, ...] = ()
 
 
 @dataclass
 class _Writer:
     assets: set[Path] = field(default_factory=set)
+    anchors: list[HeadingAnchor] = field(default_factory=list)
 
     # ---------------------------------------------------------------- inlines
     def inlines(self, nodes: tuple[Inline, ...]) -> str:
@@ -73,9 +94,8 @@ class _Writer:
             return f"<code>{esc(node.text)}</code>"
         if isinstance(node, Link):
             inner = self.inlines(node.children)
-            if node.href and (
-                node.href.startswith("#") or node.href.startswith(("http://", "https://", "mailto:"))
-            ):
+            safe_scheme = ("http://", "https://", "mailto:")
+            if node.href and (node.href.startswith("#") or node.href.startswith(safe_scheme)):
                 return f'<a href="{esc(node.href)}">{inner}</a>'
             return f"<span>{inner}</span>"
         if isinstance(node, Image):
@@ -88,7 +108,9 @@ class _Writer:
 
     def image(self, image: Image) -> str:
         if image.path is None:
-            raise RenderError(f"image {image.source!r} was not resolved; fix the image errors first")
+            raise RenderError(
+                f"image {image.source!r} was not resolved; fix the image errors first"
+            )
         self.assets.add(image.path)
         title = f' title="{esc(image.title)}"' if image.title else ""
         return f'<img src="{esc(image.path.as_uri())}" alt="{esc(image.alt)}"{title}>'
@@ -100,12 +122,12 @@ class _Writer:
     def block(self, block: Block) -> str:
         if isinstance(block, Heading):
             level = min(block.level + 1, 6)  # chapter title is h1
+            self.anchors.append(HeadingAnchor(block.id, block.text, level))
             return f'<h{level} id="{esc(block.id)}">{self.inlines(block.children)}</h{level}>'
         if isinstance(block, Paragraph):
             return f"<p>{self.inlines(block.children)}</p>"
         if isinstance(block, Figure):
-            caption = f"<figcaption>{esc(block.image.alt)}</figcaption>" if block.image.alt else ""
-            return f"<figure>{self.image(block.image)}{caption}</figure>"
+            return f"<figure>{self.image(block.image)}</figure>"
         if isinstance(block, ListBlock):
             tag = "ol" if block.ordered else "ul"
             start = f' start="{block.start}"' if block.ordered and block.start != 1 else ""
@@ -135,15 +157,15 @@ class _Writer:
 def _opener(chapter: DocChapter, layout: LayoutSettings) -> str:
     label = ""
     if layout.chapter_label and chapter.kind is ChapterKind.CHAPTER and chapter.number is not None:
-        number = int(chapter.number) if float(chapter.number).is_integer() else chapter.number
-        label = f'<p class="pf-chapter-label">{esc(layout.chapter_label)} {esc(str(number))}</p>'
+        label = (
+            f'<p class="pf-chapter-label">{esc(layout.chapter_label)} '
+            f"{esc(number_text(chapter.number))}</p>"
+        )
     title = f'<h1 class="pf-chapter-title" id="{esc(chapter.id)}">{esc(chapter.title)}</h1>'
     return f'<header class="pf-opener">{label}{title}</header>'
 
 
-def part_id(number, title: str | None) -> str:
-    from printforge.document.parse import slugify
-
+def part_id(number: int | float | None, title: str | None) -> str:
     return "part-" + slugify(f"{number if number is not None else ''} {title or ''}")
 
 
@@ -173,8 +195,9 @@ def build_html(
     first_main: str | None = None
     previous_part: tuple | None = None
     for chapter in document.chapters:
-        body = writer.blocks(chapter.blocks)
         if chapter.kind is ChapterKind.FRONT_MATTER:
+            writer.anchors.append(HeadingAnchor(chapter.id, chapter.title, 1))
+            body = writer.blocks(chapter.blocks)
             units.append(
                 f'<section class="pf-front" id="sec-{esc(chapter.id)}">'
                 f"{_opener(chapter, layout)}{body}</section>"
@@ -191,12 +214,21 @@ def build_html(
             pid = part_id(*part)
             start = " pf-start" if first_main is None else ""
             first_main = first_main or pid
+            writer.anchors.append(HeadingAnchor(pid, chapter.part_title, 1))
+            label = (
+                f'<p class="pf-part-label">Part {esc(number_text(part[0]))}</p>'
+                if part[0] is not None
+                else ""
+            )
             units.append(
                 f'<section class="pf-part{start}" id="sec-{pid}">'
-                f'<h1 class="pf-part-title" id="{pid}">{esc(chapter.part_title)}</h1></section>'
+                f'{label}<h1 class="pf-part-title" id="{pid}">{esc(chapter.part_title)}</h1>'
+                "</section>"
             )
             ids.append(f"sec-{pid}")
         previous_part = part
+        writer.anchors.append(HeadingAnchor(chapter.id, chapter.title, 1))
+        body = writer.blocks(chapter.blocks)
         start = " pf-start" if first_main is None else ""
         first_main = first_main or chapter.id
         units.append(
@@ -212,4 +244,10 @@ def build_html(
         + "\n".join(units)
         + "\n</body></html>\n"
     )
-    return HtmlBuild(html, frozenset(writer.assets), tuple(ids), first_main)
+    return HtmlBuild(
+        html,
+        frozenset(writer.assets),
+        tuple(ids),
+        first_main,
+        tuple(writer.anchors),
+    )

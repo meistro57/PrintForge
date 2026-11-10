@@ -37,7 +37,7 @@ class LocalOnlyFetcher(URLFetcher):
         self._allowed = {p.resolve() for p in allowed}
         self.blocked: list[str] = []
 
-    def fetch(self, url: str, headers=None):  # noqa: ARG002 - signature from URLFetcher
+    def fetch(self, url: str, headers=None):  # signature from URLFetcher
         parsed = urlparse(url)
         path = Path(unquote(parsed.path)).resolve() if parsed.scheme == "file" else None
         if path is None or path not in self._allowed:
@@ -66,9 +66,15 @@ class WeasyDocument:
     def pages(self) -> tuple[RenderedPage, ...]:
         return self._pages
 
+    @property
+    def font_families(self) -> tuple[str, ...]:
+        # Populated while ``write_pdf`` draws the pages; empty before that.
+        return tuple(sorted({font.family for font in self._document.fonts.values()}))
+
     def write_pdf(self) -> bytes:
-        # No timestamps are emitted (no dcterms dates in the HTML) and no random
-        # file identifier, so identical input gives identical bytes.
+        # No dcterms dates in the HTML and no random file identifier. The font
+        # subsetter still stamps ``head.modified`` with the current time, which
+        # printforge.render.pdf.normalize_pdf rewrites for reproducible builds.
         return self._document.write_pdf(pdf_identifier=False)
 
 

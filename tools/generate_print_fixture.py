@@ -14,13 +14,85 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "print-book"
 WORDS = (
-    "the a an of to in and for with on by from as at into over under between through "
-    "press paper ink margin page folio gutter spine chapter part volume edition proof "
-    "reader writer printer binding signature leaf quire type letter line column measure "
-    "careful quiet steady patient simple honest plain clear exact modest durable "
-    "makes keeps holds carries turns follows shapes guides measures builds checks sets "
-    "history workshop craft method habit question answer reason detail pattern rhythm"
-).split()
+    "the",
+    "a",
+    "an",
+    "of",
+    "to",
+    "in",
+    "and",
+    "for",
+    "with",
+    "on",
+    "by",
+    "from",
+    "as",
+    "at",
+    "into",
+    "over",
+    "under",
+    "between",
+    "through",
+    "press",
+    "paper",
+    "ink",
+    "margin",
+    "page",
+    "folio",
+    "gutter",
+    "spine",
+    "chapter",
+    "part",
+    "volume",
+    "edition",
+    "proof",
+    "reader",
+    "writer",
+    "printer",
+    "binding",
+    "signature",
+    "leaf",
+    "quire",
+    "type",
+    "letter",
+    "line",
+    "column",
+    "measure",
+    "careful",
+    "quiet",
+    "steady",
+    "patient",
+    "simple",
+    "honest",
+    "plain",
+    "clear",
+    "exact",
+    "modest",
+    "durable",
+    "makes",
+    "keeps",
+    "holds",
+    "carries",
+    "turns",
+    "follows",
+    "shapes",
+    "guides",
+    "measures",
+    "builds",
+    "checks",
+    "sets",
+    "history",
+    "workshop",
+    "craft",
+    "method",
+    "habit",
+    "question",
+    "answer",
+    "reason",
+    "detail",
+    "pattern",
+    "rhythm",
+)
 
 
 def sentence(rng: random.Random) -> str:
@@ -42,7 +114,10 @@ def chapter_body(rng: random.Random, sections: int, extra: str = "") -> str:
 
 
 def front(title, order, slug, extra=""):
-    return f'---\ntitle: "{title}"\norder: {order}\nisFrontMatter: true\nslug: "{slug}"\n{extra}---\n\n'
+    return (
+        f'---\ntitle: "{title}"\norder: {order}\n'
+        f'isFrontMatter: true\nslug: "{slug}"\n{extra}---\n\n'
+    )
 
 
 def main_fm(title, order, slug, number=None, part=None, part_title=None):
@@ -70,7 +145,9 @@ def main() -> None:
     }
     (ROOT / "book.json").write_text(json.dumps(book, indent=2) + "\n", encoding="utf-8")
     files = {
-        "foreword.md": front("Foreword", 1, "foreword") + paragraph(rng) + "\n\n" + paragraph(rng) + "\n",
+        "foreword.md": (
+            front("Foreword", 1, "foreword") + paragraph(rng) + "\n\n" + paragraph(rng) + "\n"
+        ),
     }
     parts = {1: "PART I: THE PAGE", 2: "PART II: THE BOOK"}
     order = 2
@@ -91,7 +168,9 @@ def main() -> None:
             f"Chapter Title {n}", order, f"ch-{n}", n, part, parts[part]
         ) + chapter_body(rng, 3, extra)
         order += 1
-    files["appendix-a.md"] = main_fm("Appendix A: Reference Tables", order, "appendix-a") + chapter_body(rng, 1)
+    files["appendix-a.md"] = main_fm(
+        "Appendix A: Reference Tables", order, "appendix-a"
+    ) + chapter_body(rng, 1)
     files["afterword.md"] = main_fm("Afterword", order + 1, "afterword") + paragraph(rng) + "\n"
     for name, text in files.items():
         (chapters / name).write_text(text, encoding="utf-8")
