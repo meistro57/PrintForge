@@ -6,12 +6,12 @@ into one print-ready, single-page PDF.
 ```python
 builder = InteriorPdfBuilder(job.settings, metadata=job.metadata)
 result = builder.render(document, plan, output_path)
-result.page_count   # measured, not estimated
-result.size         # measured page box, e.g. PageSize(6in, 9in)
-result.headings     # (id, text, level, page) for parts, chapters and headings
-result.fonts        # embedded families
+result.page_count  # measured, not estimated
+result.size  # measured page box, e.g. PageSize(6in, 9in)
+result.headings  # (id, text, level, page) for parts, chapters and headings
+result.fonts  # embedded families
 result.diagnostics  # (Diagnostic, ...) warnings raised while rendering
-result.sha256       # hash of the deterministic PDF bytes
+result.sha256  # hash of the deterministic PDF bytes
 ```
 
 `paginate_until_stable` from #6 is the intended caller: pass a function that
