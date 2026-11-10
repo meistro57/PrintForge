@@ -1,0 +1,10 @@
+{
+  "$comment": "Print settings for the generated fixture; see docs/PRINT_JSON.md.",
+  "metadata": {
+    "isbn": "978-1-23456-789-7",
+    "publisher": "PrintForge Fixtures",
+    "copyright_year": 2026,
+    "copyright_holder": "PrintForge Fixtures",
+    "edition": "First edition"
+  }
+}

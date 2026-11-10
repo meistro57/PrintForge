@@ -144,6 +144,17 @@ def main() -> None:
         "theme": {"mood": "ignored for print"},
     }
     (ROOT / "book.json").write_text(json.dumps(book, indent=2) + "\n", encoding="utf-8")
+    print_settings = {
+        "$comment": "Print settings for the generated fixture; see docs/PRINT_JSON.md.",
+        "metadata": {
+            "isbn": "978-1-23456-789-7",
+            "publisher": "PrintForge Fixtures",
+            "copyright_year": 2026,
+            "copyright_holder": "PrintForge Fixtures",
+            "edition": "First edition",
+        },
+    }
+    (ROOT / "print.json").write_text(json.dumps(print_settings, indent=2) + "\n", encoding="utf-8")
     files = {
         "foreword.md": (
             front("Foreword", 1, "foreword") + paragraph(rng) + "\n\n" + paragraph(rng) + "\n"

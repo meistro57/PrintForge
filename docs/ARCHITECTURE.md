@@ -48,7 +48,7 @@ BookForge stays untouched:
         config/               # print.json schema, defaults, layered resolution
         providers/            # provider profiles: kdp.py (first), later vendors
         layout/               # pagination, typography, page geometry, CSS
-        render/               # semantic document + plan -> interior PDF
+        render/               # front matter, contents, semantic document -> interior PDF
         units.py              # exact lengths; fsutil.py atomic writes; errors.py, diagnostics.py, log.py
       docs/ARCHITECTURE.md    # this file
       docs/RENDERING.md       # renderer contract, determinism, diagnostics
@@ -108,7 +108,7 @@ BookForge stays untouched:
 - [x] KDP publisher profile
 - [x] Layout/typography engine
 - [x] Interior PDF rendering
+- [x] Title/front matter and table of contents generation
 - [ ] Cover spec output (full-wrap cover.pdf)
-- [ ] Title/front matter and table of contents generation
 - [ ] Preflight report and publishing engine / build CLI
 

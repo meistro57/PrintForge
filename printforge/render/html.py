@@ -61,6 +61,8 @@ class HeadingAnchor:
     id: str
     text: str
     level: int
+    kind: str = ""  # "part", "front-matter", "chapter", "appendix", "back-matter"
+    unit: bool = False  # True for part/chapter titles, False for Markdown headings
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +78,7 @@ class HtmlBuild:
 class _Writer:
     assets: set[Path] = field(default_factory=set)
     anchors: list[HeadingAnchor] = field(default_factory=list)
+    kind: str = ""  # kind of the chapter currently being written
 
     # ---------------------------------------------------------------- inlines
     def inlines(self, nodes: tuple[Inline, ...]) -> str:
@@ -122,7 +125,7 @@ class _Writer:
     def block(self, block: Block) -> str:
         if isinstance(block, Heading):
             level = min(block.level + 1, 6)  # chapter title is h1
-            self.anchors.append(HeadingAnchor(block.id, block.text, level))
+            self.anchors.append(HeadingAnchor(block.id, block.text, level, self.kind, False))
             return f'<h{level} id="{esc(block.id)}">{self.inlines(block.children)}</h{level}>'
         if isinstance(block, Paragraph):
             return f"<p>{self.inlines(block.children)}</p>"
@@ -196,7 +199,10 @@ def build_html(
     previous_part: tuple | None = None
     for chapter in document.chapters:
         if chapter.kind is ChapterKind.FRONT_MATTER:
-            writer.anchors.append(HeadingAnchor(chapter.id, chapter.title, 1))
+            writer.kind = chapter.kind.value
+            writer.anchors.append(
+                HeadingAnchor(chapter.id, chapter.title, 1, chapter.kind.value, True)
+            )
             body = writer.blocks(chapter.blocks)
             units.append(
                 f'<section class="pf-front" id="sec-{esc(chapter.id)}">'
@@ -214,7 +220,7 @@ def build_html(
             pid = part_id(*part)
             start = " pf-start" if first_main is None else ""
             first_main = first_main or pid
-            writer.anchors.append(HeadingAnchor(pid, chapter.part_title, 1))
+            writer.anchors.append(HeadingAnchor(pid, chapter.part_title, 1, "part", True))
             label = (
                 f'<p class="pf-part-label">Part {esc(number_text(part[0]))}</p>'
                 if part[0] is not None
@@ -227,7 +233,8 @@ def build_html(
             )
             ids.append(f"sec-{pid}")
         previous_part = part
-        writer.anchors.append(HeadingAnchor(chapter.id, chapter.title, 1))
+        writer.kind = chapter.kind.value
+        writer.anchors.append(HeadingAnchor(chapter.id, chapter.title, 1, chapter.kind.value, True))
         body = writer.blocks(chapter.blocks)
         start = " pf-start" if first_main is None else ""
         first_main = first_main or chapter.id

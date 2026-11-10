@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from printforge.book import Book
     from printforge.document.model import Document
     from printforge.layout.plan import LayoutPlan
-    from printforge.render.interior import RenderResult
+    from printforge.render.result import RenderResult
 
 __all__ = ["BookImporter", "ProviderProfile", "Renderer"]
 

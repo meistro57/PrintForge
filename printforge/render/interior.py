@@ -24,12 +24,11 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from printforge import __version__
-from printforge.diagnostics import Diagnostic, Diagnostics, Severity
+from printforge.diagnostics import Diagnostics, Severity
 from printforge.document.model import (
     Block,
     BlockQuote,
@@ -47,10 +46,10 @@ from printforge.fsutil import atomic_write_bytes
 from printforge.layout.plan import LayoutPlan
 from printforge.layout.styles import stylesheet
 from printforge.log import get_logger
-from printforge.providers.base import PageSize
 from printforge.render.base import InteriorRenderer, RenderedPage
 from printforge.render.html import HeadingAnchor, build_html
 from printforge.render.pdf import normalize_pdf, read_pdf
+from printforge.render.result import HeadingLocation, RenderResult
 
 if TYPE_CHECKING:
     from printforge.config.settings import PrintSettings
@@ -64,29 +63,6 @@ MAX_EFFECTIVE_IMAGE_DPI = 600
 #: CSS reference resolution: an ``img`` without width/height renders at 96 DPI
 #: before the stylesheet's ``max-width``/``max-height`` constraints apply.
 CSS_PIXELS_PER_INCH = 96
-
-
-@dataclass(frozen=True, slots=True)
-class HeadingLocation:
-    """Where a chapter title, part or Markdown heading landed in the PDF."""
-
-    id: str
-    text: str
-    level: int
-    page: int  # 1-based physical page number
-
-
-@dataclass(frozen=True, slots=True)
-class RenderResult:
-    """Facts about a finished interior PDF, for downstream stages."""
-
-    path: Path
-    page_count: int
-    size: PageSize
-    headings: tuple[HeadingLocation, ...]
-    fonts: tuple[str, ...]
-    diagnostics: tuple[Diagnostic, ...]
-    sha256: str
 
 
 class InteriorPdfBuilder:
@@ -109,7 +85,15 @@ class InteriorPdfBuilder:
         self.metadata = dict(metadata) if metadata is not None else _settings_metadata(settings)
         self.renderer = renderer
 
-    def render(self, document: Document, layout: LayoutPlan, output_path: Path) -> RenderResult:
+    def render(
+        self,
+        document: Document,
+        layout: LayoutPlan,
+        output_path: Path,
+        *,
+        front_units: tuple[str, ...] = (),
+        front_unit_ids: tuple[str, ...] = (),
+    ) -> RenderResult:
         output_path = Path(output_path)
         errors = [item for item in document.diagnostics if item.severity is Severity.ERROR]
         if errors:
@@ -137,6 +121,8 @@ class InteriorPdfBuilder:
             language=layout.typography.language,
             title=str(self.metadata.get("title") or document.title),
             author=str(self.metadata.get("author") or ""),
+            front_units=front_units,
+            front_unit_ids=front_unit_ids,
         )
         laid_out = self._renderer().lay_out(build.html, stylesheet(layout), build.assets)
         raw = laid_out.write_pdf()
@@ -152,7 +138,8 @@ class InteriorPdfBuilder:
             )
         if facts.page_count < 1:
             raise RenderError("rendered PDF has no pages")
-        locations = _heading_locations(laid_out.pages, build.anchors)
+        labels = _page_labels(laid_out.pages, layout)
+        locations = _heading_locations(laid_out.pages, build.anchors, labels)
         if not locations:
             raise RenderError(
                 "rendered PDF has no located headings; the table of contents would be empty"
@@ -172,6 +159,7 @@ class InteriorPdfBuilder:
             page_count=facts.page_count,
             size=facts.size,
             headings=locations,
+            toc=(),
             fonts=tuple(sorted({font.base_name for font in facts.fonts})),
             diagnostics=tuple(diagnostics),
             sha256=digest,
@@ -214,17 +202,79 @@ def _document_info(document: Document, metadata: Mapping[str, Any]) -> dict[str,
 
 
 def _heading_locations(
-    pages: tuple[RenderedPage, ...], anchors: tuple[HeadingAnchor, ...]
+    pages: tuple[RenderedPage, ...],
+    anchors: tuple[HeadingAnchor, ...],
+    labels: dict[int, str],
 ) -> tuple[HeadingLocation, ...]:
-    found: dict[str, int] = {}
+    found: dict[str, RenderedPage] = {}
     for page in pages:
         for anchor in page.anchors:
-            found.setdefault(anchor, page.index + 1)
+            found.setdefault(anchor, page)
     return tuple(
-        HeadingLocation(anchor.id, anchor.text, anchor.level, found[anchor.id])
+        HeadingLocation(
+            anchor.id,
+            anchor.text,
+            anchor.level,
+            anchor.kind,
+            anchor.unit,
+            found[anchor.id].index + 1,
+            labels[found[anchor.id].index],
+        )
         for anchor in anchors
         if anchor.id in found
     )
+
+
+_ROMAN = (
+    (1000, "m"),
+    (900, "cm"),
+    (500, "d"),
+    (400, "cd"),
+    (100, "c"),
+    (90, "xc"),
+    (50, "l"),
+    (40, "xl"),
+    (10, "x"),
+    (9, "ix"),
+    (5, "v"),
+    (4, "iv"),
+    (1, "i"),
+)
+
+
+def roman(number: int) -> str:
+    """Lowercase roman numeral for front-matter folios (``4`` -> ``"iv"``)."""
+    if number <= 0:
+        return ""
+    out: list[str] = []
+    for value, symbol in _ROMAN:
+        count, number = divmod(number, value)
+        out.append(symbol * count)
+    return "".join(out)
+
+
+def _page_labels(pages: tuple[RenderedPage, ...], layout: LayoutPlan) -> dict[int, str]:
+    """Page labels in the book's own sequence, keyed by physical page index.
+
+    Front matter is numbered in lower roman from the first page; the first page
+    of the main matter resets the decimal counter to 1 (the stylesheet's
+    ``counter-reset``), so later blank pages still advance the printed folio.
+    """
+    main_start = next(
+        (
+            page.index
+            for page in pages
+            if (policy := layout.sections.get(page.name)) is not None and policy.restart_numbering
+        ),
+        None,
+    )
+    labels: dict[int, str] = {}
+    for page in pages:
+        if main_start is None or page.index < main_start:
+            labels[page.index] = roman(page.index + 1)
+        else:
+            labels[page.index] = str(page.index - main_start + 1)
+    return labels
 
 
 def _check_fonts(

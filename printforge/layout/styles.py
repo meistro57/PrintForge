@@ -145,6 +145,33 @@ def _section_rules(plan: LayoutPlan) -> list[str]:
     return rules
 
 
+def _front_matter_rules(plan: LayoutPlan) -> list[str]:
+    heading = font_family(plan.typography.heading_font)
+    return [
+        # Display pages: half title, title page, copyright page.
+        ".pf-display .pf-page { break-inside: avoid; }",
+        ".pf-half-title { margin-top: 3in; font-size: 1.15em; letter-spacing: 0.12em; "
+        "text-transform: uppercase; }",
+        ".pf-title-block { margin-top: 2.1in; padding: 0 0.4in; }",
+        f".pf-book-title {{ font-family: {heading}; font-size: 2em; line-height: 1.2; "
+        "margin: 0 0 0.35em; }",
+        ".pf-subtitle { font-size: 1.15em; font-style: italic; margin: 0 0 1.8em; }",
+        ".pf-author { font-size: 1.2em; margin: 0 0 3em; }",
+        ".pf-imprint { font-size: 0.9em; letter-spacing: 0.1em; text-transform: uppercase; }",
+        ".pf-copyright { margin-top: 4.2in; font-size: 0.82em; line-height: 1.5; }",
+        ".pf-copyright p { margin: 0 0 0.45em; }",
+        # Table of contents: dot leaders, no underline, indented sub-entries.
+        ".pf-toc { margin-top: 0.25in; }",
+        ".pf-toc-entry { margin: 0.45em 0; text-indent: 0; }",
+        ".pf-toc-entry a { color: inherit; text-decoration: none; }",
+        ".pf-toc-dots::after { content: leader('.'); }",
+        ".pf-toc-folio { margin-left: 0.35em; white-space: nowrap; }",
+        ".pf-toc-level-2 { margin-left: 0.25in; font-size: 0.95em; }",
+        ".pf-toc-level-3 { margin-left: 0.5in; font-size: 0.9em; }",
+        ".pf-toc-part { font-weight: bold; margin-top: 1.1em; }",
+    ]
+
+
 def _typography_rules(plan: LayoutPlan) -> list[str]:
     t = plan.typography
     lay = plan.layout
@@ -209,6 +236,7 @@ def stylesheet(plan: LayoutPlan) -> str:
         f"gutter {plan.geometry.inside} ({plan.gutter_rule}) */",
         *_page_rules(plan),
         *_section_rules(plan),
+        *_front_matter_rules(plan),
         *_typography_rules(plan),
     ]
     return "\n".join(parts) + "\n"

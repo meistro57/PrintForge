@@ -61,8 +61,8 @@ book dir (read-only source)
   config/    -> ResolvedPrintJob (layered print settings + provenance)
   providers/ -> ProviderProfile: vendor rules (trim, gutters, page counts, spine, cover)
   layout/    -> LayoutPlan + CSS Paged Media stylesheet
-  render/    -> interior PDF (WeasyPrint) + measured page count, heading map, fonts
-  (publisher/preflight, #8-#10, not written yet) -> manifest, cover, reports
+  render/    -> front matter, contents, interior PDF + page/heading map, fonts
+  (publisher/preflight, #9-#11, not written yet) -> manifest, cover, reports
 ```
 
 | Package | Responsibility |
@@ -74,7 +74,7 @@ book dir (read-only source)
 | `printforge/config/` | `print.json` schema, defaults, layered merge, validation |
 | `printforge/providers/` | Registry + `base.py` contract + `kdp.py` rules |
 | `printforge/layout/` | Page geometry, section policies, gutter convergence, CSS |
-| `printforge/render/` | HTML contract, WeasyPrint adapter, reproducible PDF, pypdf facts |
+| `printforge/render/` | HTML contract, front matter/contents, WeasyPrint adapter, PDF facts |
 | `printforge/fsutil.py` | Atomic file writes (temp file + `os.replace`, creates parents) |
 | `printforge/units.py` | `Length`: exact rational inches, unit-required parsing |
 | `printforge/errors.py` | Exception hierarchy mapped to stable exit codes |
@@ -113,6 +113,10 @@ symlinks pointing outside are rejected (`importer/paths.py`) — keep that polic
 Bare numbers are rejected by design; serialization happens only at the edge via
 `to_str()` (normalized decimals) or `css()` (inches, 4 dp). Never reintroduce floats
 for geometry.
+
+**Metadata honesty.** The title and copyright pages print only fields supplied by
+`book.json` or `print.json`. Never add placeholder ISBNs, copyright years, holders,
+publisher names or legal boilerplate; omitted metadata stays omitted.
 
 **Provider isolation.** Core packages (`importer`, `document`) must not import
 `printforge.providers`; `config` may only import the registry. A static AST test
@@ -170,21 +174,24 @@ Render one book by hand (no CLI yet):
 ```python
 job = resolve_print_job(load_book(path))
 doc = parse_book(load_book(path))
-plan = plan_layout(job.settings, get_provider("kdp"), pages, book_title=doc.title)
-result = InteriorPdfBuilder(job.settings, metadata=job.metadata).render(
-    doc, plan, Path("interior.pdf")
+result = build_interior_pdf(
+    doc, job.settings, get_provider("kdp"), Path("interior.pdf"), metadata=job.metadata
 )
 ```
+
+`build_interior_pdf` generates front matter + contents and resolves folios with a
+bounded multipass loop; `InteriorPdfBuilder.render` is the single-pass primitive
+(take a `LayoutPlan`, no front matter) used by tests and by that loop.
 
 ## Testing
 
 - Tests are per-stage: `test_importer`, `test_settings`, `test_document`, `test_kdp`,
-  `test_layout`, `test_units`, `test_render_html`, `test_interior`, plus contract tests
-  in `test_conventions.py`.
+  `test_layout`, `test_units`, `test_render_html`, `test_frontmatter`,
+  `test_interior`, plus contract tests in `test_conventions.py`.
 - Fixtures in `tests/fixtures/`: `minimal-book` (quick start), `markdown-book` (parser
   coverage + golden snapshot), `bookforge-root` (multi-book checkout layout),
-  `print-book` (45-page generated manuscript for real PDF renders). Tests that mutate
-  a book copy it to `tmp_path` first (`shutil.copytree`).
+  `print-book` (generated 45-page manuscript plus `print.json` metadata for real PDF
+  renders). Tests that mutate a book copy it to `tmp_path` first (`shutil.copytree`).
 - `conftest.py` exposes `fixtures_dir` and `minimal_book`; tests frequently build
   settings with `resolve_print_job(load_book(path), cli_overrides={...}).settings`.
 - Test rule IDs and exact user-facing messages rather than tracebacks; assert exit

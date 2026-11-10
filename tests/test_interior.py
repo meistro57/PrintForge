@@ -25,7 +25,7 @@ from printforge.importer import load_book
 from printforge.layout import inside_margin, paginate_until_stable, plan_layout
 from printforge.providers import get_provider
 from printforge.providers.base import PageSize
-from printforge.render import InteriorPdfBuilder, read_pdf
+from printforge.render import InteriorPdfBuilder, build_interior_pdf, read_pdf, toc_entries
 from printforge.units import Length
 
 pytestmark = pytest.mark.pdf
@@ -272,3 +272,144 @@ def test_renderer_satisfies_the_stage_protocol(job):
     from printforge.interfaces import Renderer
 
     assert isinstance(InteriorPdfBuilder(job.settings), Renderer)
+
+
+# ------------------------------------------------------------------ front matter
+
+
+@pytest.fixture(scope="module")
+def assembled(tmp_path_factory, document, job):
+    out = tmp_path_factory.mktemp("assembled") / "interior.pdf"
+    result = build_interior_pdf(document, job.settings, KDP, out, metadata=job.metadata)
+    return result, read_pdf(out.read_bytes())
+
+
+def test_front_matter_precedes_the_book(assembled):
+    _result, facts = assembled
+    pages = facts.text_pages
+    assert "The Printer's Field Guide" in pages[0]
+    assert "© 2026 PrintForge Fixtures" in pages[1]
+    assert "ISBN 9781234567897" in pages[1]
+    assert "First edition" in pages[1]
+    assert pages[2].strip().startswith("Contents")
+
+
+def test_toc_lists_parts_and_chapters(assembled):
+    result, facts = assembled
+    toc_text = facts.text_pages[2]
+    assert "PART I: THE PAGE" in toc_text
+    assert "Chapter Title 1" in toc_text
+    assert "Appendix A: Reference Tables" in toc_text
+    assert [entry.kind for entry in result.toc].count("part") == 2
+    assert all(entry.level == 1 for entry in result.toc)
+
+
+def test_toc_folios_match_the_destination_pages(assembled):
+    result, facts = assembled
+    checked = 0
+    for entry in result.toc:
+        if entry.kind == "part":
+            continue  # part dividers intentionally print no folio
+        heading = next(item for item in result.headings if item.id == entry.id)
+        lines = [line for line in facts.text_pages[heading.page - 1].splitlines() if line.strip()]
+        assert lines[-1] == entry.folio, (entry, lines[-1])
+        checked += 1
+    assert checked >= 8
+
+
+def test_toc_text_lines_match_the_entries(assembled):
+    import re
+
+    result, facts = assembled
+    pattern = re.compile(r"^(?P<text>.+?)\s*\.{2,}\s*(?P<folio>[\divxlcdm]+)$")
+    rows = []
+    for line in facts.text_pages[2].splitlines():
+        match = pattern.match(line.strip())
+        if match:
+            rows.append((match.group("text"), match.group("folio")))
+    assert len(rows) == len(result.toc)
+    assert [text for text, _ in rows] == [entry.text for entry in result.toc]
+    assert [folio for _, folio in rows] == [entry.folio for entry in result.toc]
+
+
+def test_toc_depth_and_front_matter_follow_settings(tmp_path, document, job):
+    settings = replace(
+        job.settings,
+        toc=replace(job.settings.toc, depth=3, include_front_matter=True),
+    )
+    result = build_interior_pdf(
+        document, settings, KDP, tmp_path / "deep.pdf", metadata=job.metadata
+    )
+    assert any(entry.kind == "front-matter" for entry in result.toc)
+    assert {entry.level for entry in result.toc} == {1, 2}
+    assert result.toc == toc_entries(result.headings, settings.toc)
+
+
+def test_toc_can_be_disabled(tmp_path, document, job):
+    settings = replace(job.settings, toc=replace(job.settings.toc, enabled=False))
+    out = tmp_path / "no-toc.pdf"
+    result = build_interior_pdf(document, settings, KDP, out, metadata=job.metadata)
+    facts = read_pdf(out.read_bytes())
+    assert result.toc == ()
+    assert "Contents" not in facts.text
+
+
+def test_assembled_build_is_deterministic(tmp_path, document, job):
+    first = build_interior_pdf(
+        document, job.settings, KDP, tmp_path / "a.pdf", metadata=job.metadata
+    )
+    time.sleep(1.1)
+    second = build_interior_pdf(
+        document, job.settings, KDP, tmp_path / "b.pdf", metadata=job.metadata
+    )
+    assert first.sha256 == second.sha256
+    assert (tmp_path / "a.pdf").read_bytes() == (tmp_path / "b.pdf").read_bytes()
+
+
+def test_toc_convergence_failure_is_reported(monkeypatch, tmp_path):
+    import itertools
+
+    from printforge.render import TocConvergenceError, TocEntry
+
+    book = load_book(FIXTURES / "minimal-book")
+    document = parse_book(book)
+    job = resolve_print_job(book)
+    counter = itertools.count()
+
+    def flapping(headings, toc):
+        return (TocEntry("x", f"entry {next(counter)}", 1, "1"),)
+
+    monkeypatch.setattr("printforge.render.build.toc_entries", flapping)
+    out = tmp_path / "flapping.pdf"
+    with pytest.raises(TocConvergenceError, match="did not settle"):
+        build_interior_pdf(
+            document,
+            job.settings,
+            KDP,
+            out,
+            metadata=job.metadata,
+            max_toc_passes=2,
+        )
+    assert not out.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_long_and_empty_headings_do_not_corrupt_the_toc(tmp_path, job, assembled):
+    broke = tmp_path / "book"
+    shutil.copytree(FIXTURE, broke)
+    long_title = (
+        "A chapter title long enough to wrap over several lines in the contents "
+        "without breaking the dot leaders or the page numbers"
+    )
+    (broke / "chapters" / "zz-long.md").write_text(
+        f'---\ntitle: "{long_title}"\norder: 60\n---\n\n'
+        "##\n\nA heading with no text above this paragraph.\n",
+        encoding="utf-8",
+    )
+    document = parse_book(load_book(broke))
+    result = build_interior_pdf(
+        document, job.settings, KDP, tmp_path / "long.pdf", metadata=job.metadata
+    )
+    assert all(entry.text.strip() for entry in result.toc)
+    assert any(entry.text.startswith("A chapter title long enough") for entry in result.toc)
+    assert len(result.toc) == len(toc_entries(result.headings, job.settings.toc))
