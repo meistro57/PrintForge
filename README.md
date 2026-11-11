@@ -32,12 +32,14 @@ printforge discover tests/fixtures/bookforge-root        # list books in a check
 printforge inspect tests/fixtures/print-book             # JSON report, no rendering
 printforge settings tests/fixtures/print-book --trim 6x9 # resolved print settings
 printforge build tests/fixtures/print-book --output build/print-book
+printforge check build/print-book                        # re-run preflight on the output
 pytest && ruff check . && ruff format --check .
 ```
 
-The build writes `interior.pdf`, `cover.pdf`, `cover-spec.json`, `metadata.json`
-and `build-report.json`. A rebuild needs `--force`; a failed build leaves the
-previous output untouched. See [docs/BUILD.md](docs/BUILD.md).
+The build writes `interior.pdf`, `cover.pdf`, `cover-spec.json`, `metadata.json`,
+`build-report.json`, `preflight.json` and `preflight.md`. A rebuild needs
+`--force`; a failed build leaves the previous output untouched. See
+[docs/BUILD.md](docs/BUILD.md) and [docs/PREFLIGHT.md](docs/PREFLIGHT.md).
 
 `tests/fixtures/minimal-book` is a small synthetic manuscript in BookForge layout:
 it is below KDP's 24-page minimum, so use it for `settings`/`inspect`, and
@@ -50,10 +52,14 @@ it is below KDP's 24-page minimum, so use it for `settings`/`inspect`, and
 Early development — see the [v0.1 roadmap (#14)](https://github.com/meistro57/PrintForge/issues/14)
 and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The full pipeline is wired:
 interior PDF, generated front matter, a table of contents with real page numbers,
-full-wrap cover, metadata and build report ([docs/BUILD.md](docs/BUILD.md),
-[docs/RENDERING.md](docs/RENDERING.md), [docs/FRONT_MATTER.md](docs/FRONT_MATTER.md),
-[docs/COVER.md](docs/COVER.md)). Preflight reporting and the end-to-end regression
-suite are next (#11, #12).
+full-wrap cover, metadata, build report and preflight audit, with an end-to-end
+regression suite that builds and checks the checked-in fixture on Linux CI.
+
+Start with [docs/QUICKSTART.md](docs/QUICKSTART.md), then
+[docs/BUILD.md](docs/BUILD.md), [docs/PREFLIGHT.md](docs/PREFLIGHT.md),
+[docs/BOOKFORGE_IMPORT.md](docs/BOOKFORGE_IMPORT.md) and
+[docs/KDP_WORKFLOW.md](docs/KDP_WORKFLOW.md). Problems installing or
+interpreting a preflight finding: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## License
 

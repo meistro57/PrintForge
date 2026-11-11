@@ -39,3 +39,14 @@ jobs:
           ruff format --check .
       - name: Test
         run: pytest
+      - name: End-to-end build and preflight
+        run: |
+          printforge build tests/fixtures/print-book --output build/print-book
+          printforge check build/print-book
+      - name: Upload the generated book (Linux wheels only)
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: print-book
+          path: build/print-book
+          if-no-files-found: error

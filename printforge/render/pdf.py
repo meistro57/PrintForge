@@ -79,8 +79,12 @@ def normalize_pdf(pdf_bytes: bytes, info: Mapping[str, str]) -> bytes:
     return output.getvalue()
 
 
-def read_pdf(pdf_bytes: bytes) -> PdfFacts:
-    """Inspect a finished PDF: page count, page size, text, fonts, metadata."""
+def read_pdf(pdf_bytes: bytes, *, extract_text: bool = True) -> PdfFacts:
+    """Inspect a finished PDF: page count, page size, text, fonts, metadata.
+
+    ``extract_text=False`` skips text extraction, which is unnecessary (and slow
+    for long books) when a stage only needs geometry, fonts or encryption.
+    """
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(pdf_bytes))
@@ -102,7 +106,9 @@ def read_pdf(pdf_bytes: bytes) -> PdfFacts:
         page_count=len(reader.pages),
         size=size,
         page_sizes=sizes,
-        text_pages=tuple(page.extract_text() or "" for page in reader.pages),
+        text_pages=(
+            tuple(page.extract_text() or "" for page in reader.pages) if extract_text else ()
+        ),
         fonts=tuple(fonts),
         encrypted=bool(reader.is_encrypted),
         metadata=metadata,

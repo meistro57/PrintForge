@@ -19,8 +19,10 @@ The output directory receives exactly these files:
 | `interior.pdf` | single-page-width interior, 6 x 9 in by default, with generated front matter and contents |
 | `cover.pdf` | one full-wrap page: back cover, spine, front cover |
 | `cover-spec.json` | cover geometry: trim, bleed, spine, folds, safe areas, barcode reserve, sources |
-| `metadata.json` | submission metadata and print geometry for the provider |
-| `build-report.json` | artifact sizes/hashes and every diagnostic collected by the build |
+| `metadata.json` | submission metadata, print geometry, resolved settings and source hashes |
+| `build-report.json` | artifact sizes/hashes, every build diagnostic and the preflight verdict |
+| `preflight.json` | machine-readable preflight findings, provenance and output hashes |
+| `preflight.md` | human-readable preflight report with every finding and suggested fix |
 
 Output location, in order of precedence:
 
@@ -36,7 +38,7 @@ Deterministic, path-free submission data:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "provider": "kdp",
   "display_name": "Amazon KDP paperback",
   "book": "print-book",
@@ -47,12 +49,21 @@ Deterministic, path-free submission data:
             "finish": "matte", "page_count": 49, "spine": "0.110348in",
             "cover": {"width": "12.360348in", "height": "9.25in"}},
   "settings": {"layers": ["platform defaults", "provider defaults (kdp)",
-                          "print.json"], "config": {"file": "print.json", "sha256": "..."}},
+                          "print.json"], "config": {"file": "print.json", "sha256": "..."},
+               "resolved": {"provider": "kdp", "trim": {"width": "6in", "...": "..."}}},
+  "source": {"book_json": {"file": "book.json", "sha256": "..."},
+             "chapters": [{"file": "chapters/ch-1.md", "sha256": "..."}]},
   "files": {"interior": "interior.pdf", "cover": "cover.pdf",
-            "cover_spec": "cover-spec.json", "report": "build-report.json"},
+            "cover_spec": "cover-spec.json", "report": "build-report.json",
+            "preflight": "preflight.json", "preflight_markdown": "preflight.md"},
   "hashes": {"interior.pdf": "...", "cover.pdf": "...", "cover-spec.json": "..."}
 }
 ```
+
+`settings.resolved` is the complete validated settings object (without the
+environment-specific `output.directory`), so `printforge check` can verify the
+geometry without the original `print.json`. `source` records the hashes of
+`book.json` and every chapter for provenance.
 
 Fields that were not supplied stay `null`; nothing is invented.
 
@@ -60,21 +71,24 @@ Fields that were not supplied stay `null`; nothing is invented.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "book": "print-book",
   "provider": "kdp",
   "artifacts": {"interior.pdf": {"bytes": 122043, "sha256": "..."},
                 "cover.pdf": {"bytes": 10502, "sha256": "..."},
                 "cover-spec.json": {"bytes": 2079, "sha256": "..."}},
-  "diagnostics": [{"stage": "cover", "severity": "WARNING",
-                   "rule_id": "COVER-IMAGE-DPI", "message": "...",
-                   "context": "...", "suggestion": "..."}],
-  "summary": {"errors": 0, "warnings": 1, "infos": 0}
+  "preflight": {"ready": true, "json": "preflight.json", "markdown": "preflight.md"},
+  "diagnostics": [{"stage": "preflight", "severity": "INFO",
+                   "rule_id": "PREFLIGHT-PAGES-ODD", "message": "...",
+                   "context": "interior.pdf", "suggestion": "..."}],
+  "summary": {"errors": 0, "warnings": 0, "infos": 3}
 }
 ```
 
-Stages are `import`, `document`, `provider`, `render` and `cover`. The same
-diagnostics are also logged: warnings to stderr, infos only with `-v`.
+Stages are `import`, `document`, `provider`, `render`, `cover` and `preflight`.
+The same diagnostics are also logged: warnings to stderr, infos only with `-v`.
+ERROR-level preflight findings abort the build with exit `7`; WARNING and INFO
+findings stay in the report and in `preflight.json`/`preflight.md`.
 
 ## Pipeline and exit codes
 
@@ -82,7 +96,8 @@ diagnostics are also logged: warnings to stderr, infos only with `-v`.
 importer -> print settings -> provider settings check -> document
          -> interior (front matter, contents, gutter convergence)
          -> provider finished-book check
-         -> cover -> metadata.json + build-report.json -> publish
+         -> cover -> metadata.json -> preflight
+         -> build-report.json + preflight.json/preflight.md -> publish
 ```
 
 Failures map to the documented exit codes:
@@ -93,21 +108,36 @@ Failures map to the documented exit codes:
 | invalid `print.json` or command-line setting | 4 config |
 | provider rule violated, at settings time or for the finished page count/gutter/page size | 5 constraint |
 | PDF rendering failed | 6 render |
+| preflight found an ERROR in the finished artifacts | 7 preflight |
 | output directory is not writable or already contains another build | 8 output |
 
 ## Rebuilds and safety
 
 - A build **refuses to overwrite** an existing PrintForge output unless
   `--force` is given (`exit 8`, with a hint).
-- `--force` only replaces a directory that consists exclusively of the five
+- `--force` only replaces a directory that consists exclusively of the seven
   artifact names. If it contains anything else, PrintForge refuses and leaves
   it alone — unrelated files are never deleted.
 - Every stage runs in a hidden staging directory next to the target. The target
-  is replaced only after `metadata.json` and `build-report.json` are written, so
-  a failed build leaves the previous successful output byte-for-byte intact and
-  no partial files behind.
+  is replaced only after `metadata.json`, `build-report.json`, `preflight.json`
+  and `preflight.md` are written, so a failed build leaves the previous
+  successful output byte-for-byte intact and no partial files behind.
 - Manuscript inputs are opened read-only; the build never writes into the book
   directory.
+
+## `printforge check`
+
+```sh
+printforge check build/print-book
+```
+
+Re-runs preflight against an existing output directory and rewrites
+`preflight.json` and `preflight.md`. It verifies file presence/readability,
+PDF validity and encryption, interior spread/page-size and page-count rules,
+cover size and spine formula, manifest names/print details/hashes, embedded
+fonts and image print resolution. It exits `7` on any ERROR. See
+[PREFLIGHT.md](PREFLIGHT.md) for every rule ID, the report schema and the
+checks that still need a human eye.
 
 ## `printforge inspect`
 

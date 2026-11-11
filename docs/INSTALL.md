@@ -49,4 +49,8 @@ pytest
 
 `tests/test_stack.py` renders a one-page PDF with WeasyPrint and reads it back with
 pypdf; if it fails with `OSError: cannot load library 'pango-1.0-0'` the native
-libraries from step 1 are missing.
+libraries from step 1 are missing. CI installs the same packages on Ubuntu 24.04
+for Python 3.11 and 3.12, runs the full suite, then performs one real build and
+`printforge check` against the checked-in fixture.
+
+For WSL, font and permission issues, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

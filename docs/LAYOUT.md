@@ -71,7 +71,7 @@ Named pages (CSS `page:`) define each run:
 **Limitation:** WeasyPrint honours widows/orphans and keep-with-next whenever possible.
 When that is impossible (for example a heading followed by an image taller than the
 remaining space), it breaks anyway without telling the caller. PrintForge cannot detect
-this reliably, so preflight lists it as a human inspection item.
+this reliably, so [preflight](PREFLIGHT.md) lists it as a human inspection item.
 
 ## HTML contract for renderers
 

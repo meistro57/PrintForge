@@ -133,7 +133,7 @@ the document model and abort the render with the chapter and file named.
 - Links keep `http`, `https`, `mailto` and `#` targets; any other target is
   printed as plain text. Page numbers and cross-references are not rewritten.
 - WeasyPrint honours widows/orphans "when possible" and stays silent when a
-  page break makes it impossible; this is a human inspection item in preflight.
+  page break makes it impossible; this is a human inspection item in [preflight](PREFLIGHT.md).
 
 ## Testing
 

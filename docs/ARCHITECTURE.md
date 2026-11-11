@@ -50,21 +50,27 @@ BookForge stays untouched:
         layout/               # pagination, typography, page geometry, CSS
         render/               # front matter, contents, semantic document -> interior PDF
         cover/                # full-wrap cover geometry, spec and PDF
+        preflight/            # inspect finished artifacts, preflight.json/markdown
         publish/              # end-to-end build: artifacts, metadata, report
         units.py              # exact lengths; fsutil.py atomic writes; errors.py, diagnostics.py, log.py
       docs/ARCHITECTURE.md    # this file
+      docs/QUICKSTART.md      # fresh-clone build, check and output tour
+      docs/BUILD.md           # build/output contract and CLI
       docs/RENDERING.md       # renderer contract, determinism, diagnostics
+      docs/PREFLIGHT.md       # preflight rules, reports and manual checks
+      docs/KDP_WORKFLOW.md    # upload fields, previewer checklist, limitations
       tests/
 
 ## Modules
 
-1. **CLI** — `printforge build`, `inspect`, `settings` and `discover`. The build
-   command writes `interior.pdf`, `cover.pdf`, `cover-spec.json`, `metadata.json`
-   and `build-report.json`; it never uploads. See [docs/BUILD.md](BUILD.md).
+1. **CLI** — `printforge build`, `check`, `inspect`, `settings` and `discover`.
+   The build command writes `interior.pdf`, `cover.pdf`, `cover-spec.json`,
+   `metadata.json`, `build-report.json`, `preflight.json` and `preflight.md`; it
+   never uploads. See [docs/BUILD.md](BUILD.md) and [docs/PREFLIGHT.md](PREFLIGHT.md).
 
 2. **Publishing engine** (publish/) — orchestrates: load book, resolve print
    profile, parse, paginate, render interior, check finished-book rules, render
-   cover, emit provider manifest and report, then publish atomically.
+   cover, emit provider manifest, run preflight, then publish atomically.
    Provider-agnostic core.
 
 3. **Provider profiles** (providers/) — pluggable. Each provider contributes its
@@ -74,6 +80,11 @@ BookForge stays untouched:
 4. **Renderer** (render/) — semantic document plus layout plan to a single-page
    interior PDF, with measured page count and heading locations. See
    [docs/RENDERING.md](RENDERING.md).
+
+5. **Preflight** (preflight/) — re-reads the rendered PDFs, cover spec and
+   manifest and verifies provider geometry, page counts, embedded fonts, image
+   print resolution and artifact hashes. Produces `preflight.json` and
+   `preflight.md`; ERROR findings stop a build. See [docs/PREFLIGHT.md](PREFLIGHT.md).
 
 ## Data flow
 
@@ -114,5 +125,6 @@ BookForge stays untouched:
 - [x] Title/front matter and table of contents generation
 - [x] Cover spec output (full-wrap cover.pdf)
 - [x] Publishing engine and `printforge build` CLI
-- [ ] Preflight report
+- [x] Preflight report, `printforge check` and artifact audit trail
+- [x] End-to-end build/preflight regression suite and operator docs
 

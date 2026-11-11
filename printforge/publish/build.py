@@ -28,10 +28,16 @@ from printforge.config import ResolvedPrintJob, resolve_print_job
 from printforge.cover import CoverResult, build_cover
 from printforge.diagnostics import Diagnostic, Severity
 from printforge.document import parse_book
-from printforge.errors import ConstraintError, InputError, OutputError
+from printforge.errors import ConstraintError, InputError, OutputError, PreflightError
 from printforge.fsutil import atomic_write_text
 from printforge.importer import load_book
 from printforge.log import get_logger
+from printforge.preflight import (
+    BUILD_ARTIFACTS,
+    PREFLIGHT_ARTIFACTS,
+    PreflightResult,
+    inspect_build,
+)
 from printforge.providers import get_provider
 from printforge.providers.base import ProviderProfile
 from printforge.render import RenderResult, build_interior_pdf
@@ -39,19 +45,13 @@ from printforge.render import RenderResult, build_interior_pdf
 log = get_logger("publish")
 
 #: Files a build writes, and the only names a `--force` rebuild may replace.
-ARTIFACTS = (
-    "interior.pdf",
-    "cover.pdf",
-    "cover-spec.json",
-    "metadata.json",
-    "build-report.json",
-)
+ARTIFACTS = (*BUILD_ARTIFACTS, *PREFLIGHT_ARTIFACTS)
 
 #: Default output root, used when neither --output nor print.json sets one.
 DEFAULT_OUTPUT_ROOT = Path("printforge-output")
 
-MANIFEST_SCHEMA_VERSION = 1
-REPORT_SCHEMA_VERSION = 1
+MANIFEST_SCHEMA_VERSION = 2
+REPORT_SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,10 +140,27 @@ def build_book(
             cover.spec["spine"]["width"],
         )
 
-        metadata = _manifest(job, book, provider, interior, cover, temporary)
-        report = _report(book, provider, staged, interior, cover)
+        metadata = _manifest(job, book, provider, interior, cover)
         atomic_write_text(temporary / "metadata.json", json.dumps(metadata, indent=2) + "\n")
+
+        preflight = inspect_build(
+            temporary,
+            settings=job.settings,
+            provider=provider,
+            document=document,
+            require_report=False,
+        )
+        staged.extend(("preflight", item) for item in preflight.diagnostics)
+        if preflight.has_errors:
+            errors = [item for item in preflight.diagnostics if item.severity is Severity.ERROR]
+            raise PreflightError(
+                _listing("preflight", errors),
+                hint="preflight refuses to publish artifacts the provider may reject",
+            )
+
+        report = _report(book, provider, staged, interior, cover, preflight)
         atomic_write_text(temporary / "build-report.json", json.dumps(report, indent=2) + "\n")
+        preflight.write()
         _log_diagnostics(staged)
         _commit(temporary, target)
     except BaseException:
@@ -249,7 +266,6 @@ def _manifest(
     provider: ProviderProfile,
     interior: RenderResult,
     cover: CoverResult,
-    directory: Path,
 ) -> dict[str, Any]:
     settings = job.settings
     metadata = job.metadata
@@ -265,7 +281,9 @@ def _manifest(
         "copyright_holder",
         "edition",
     )
-    spec_hash = hashlib.sha256((directory / "cover-spec.json").read_bytes()).hexdigest()
+    spec_hash = hashlib.sha256(cover.spec_path.read_bytes()).hexdigest()
+    resolved = settings.to_dict()
+    resolved.pop("output", None)
     return {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "provider": provider.name,
@@ -292,12 +310,16 @@ def _manifest(
         "settings": {
             "layers": list(job.layers),
             "config": {"file": job.config_label, "sha256": job.config_sha256},
+            "resolved": resolved,
         },
+        "source": _source_hashes(book),
         "files": {
             "interior": "interior.pdf",
             "cover": "cover.pdf",
             "cover_spec": "cover-spec.json",
             "report": "build-report.json",
+            "preflight": "preflight.json",
+            "preflight_markdown": "preflight.md",
         },
         "hashes": {
             "interior.pdf": interior.sha256,
@@ -307,12 +329,23 @@ def _manifest(
     }
 
 
+def _source_hashes(book: Book) -> dict[str, Any]:
+    """Path-free provenance for the manuscript and settings that produced a build."""
+    return {
+        "book_json": {"file": "book.json", "sha256": book.metadata_sha256},
+        "chapters": [
+            {"file": chapter.relative_path, "sha256": chapter.sha256} for chapter in book.chapters
+        ],
+    }
+
+
 def _report(
     book: Book,
     provider: ProviderProfile,
     staged: list[tuple[str, Diagnostic]],
     interior: RenderResult,
     cover: CoverResult,
+    preflight: PreflightResult,
 ) -> dict[str, Any]:
     counts = {severity.value: 0 for severity in Severity}
     for _stage, item in staged:
@@ -328,6 +361,11 @@ def _report(
                 "bytes": _size(cover.spec_path),
                 "sha256": _hash(cover.spec_path),
             },
+        },
+        "preflight": {
+            "ready": preflight.ready,
+            "json": "preflight.json",
+            "markdown": "preflight.md",
         },
         "diagnostics": [{"stage": stage, **item.to_dict()} for stage, item in staged],
         "summary": {

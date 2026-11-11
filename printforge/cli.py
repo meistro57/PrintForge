@@ -13,9 +13,10 @@ from printforge.config import resolve_print_job
 from printforge.config.cli_overrides import add_settings_arguments, overrides_from_args
 from printforge.diagnostics import Severity
 from printforge.document import parse_book
-from printforge.errors import ExitCode, PrintForgeError
+from printforge.errors import ExitCode, InputError, PrintForgeError
 from printforge.importer import discover_books, load_book
 from printforge.log import configure, get_logger
+from printforge.preflight import inspect_build
 from printforge.providers import get_provider
 from printforge.publish import build_book
 
@@ -35,6 +36,7 @@ examples:
   printforge settings tests/fixtures/print-book --trim 6x9
   printforge inspect tests/fixtures/print-book
   printforge build tests/fixtures/print-book --output build/print-book
+  printforge check build/print-book
   printforge discover /path/to/BookForge
 
 exit codes:
@@ -50,6 +52,41 @@ def _cmd_build(args: argparse.Namespace) -> int:
         config_path=args.config,
         cli_overrides=overrides_from_args(args),
         force=args.force,
+    )
+    return int(ExitCode.OK)
+
+
+def _cmd_check(args: argparse.Namespace) -> int:
+    output_dir = Path(args.output_dir)
+    if not output_dir.is_dir():
+        raise InputError(
+            f"not a build output directory: {output_dir}",
+            hint="pass the directory 'printforge build --output' wrote to",
+        )
+    result = inspect_build(output_dir)
+    json_path, markdown_path = result.write()
+    for item in result.diagnostics:
+        if item.severity is Severity.ERROR:
+            log.error("%s", item.format())
+        elif item.severity is Severity.WARNING:
+            log.warning("%s", item.format())
+        else:
+            log.debug("%s", item.format())
+    summary = result.report["summary"]
+    if result.has_errors:
+        log.error(
+            "preflight: %d error(s), %d warning(s); see %s",
+            summary["errors"],
+            summary["warnings"],
+            markdown_path,
+        )
+        return int(ExitCode.PREFLIGHT)
+    log.info(
+        "preflight: ready (%d warning(s), %d info); see %s and %s",
+        summary["warnings"],
+        summary["infos"],
+        json_path,
+        markdown_path,
     )
     return int(ExitCode.OK)
 
@@ -143,11 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = sub.add_parser(
         "build",
-        help="build interior.pdf, cover.pdf, cover-spec.json, metadata.json and a report",
+        help="build the PDFs, cover spec, manifest, report and preflight report",
         description=(
             "Build print-ready files for a book directory. The output directory "
-            "receives interior.pdf, cover.pdf, cover-spec.json, metadata.json and "
-            "build-report.json. Existing builds are only replaced with --force."
+            "receives interior.pdf, cover.pdf, cover-spec.json, metadata.json, "
+            "build-report.json, preflight.json and preflight.md. Existing builds "
+            "are only replaced with --force."
         ),
     )
     build.add_argument("book_dir", type=Path, help="directory containing book.json")
@@ -158,6 +196,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="replace a previous PrintForge build in the output directory",
     )
     build.set_defaults(func=_cmd_build)
+
+    check = sub.add_parser(
+        "check",
+        help="preflight an existing build output directory",
+        description=(
+            "Inspect a directory produced by 'printforge build': verify the PDFs, cover "
+            "geometry, manifest and hashes, then write preflight.json and preflight.md. "
+            "Exits 7 when an ERROR-level finding would make the files unsafe to upload."
+        ),
+    )
+    check.add_argument("output_dir", type=Path, help="directory written by 'printforge build'")
+    check.set_defaults(func=_cmd_check)
 
     inspect = sub.add_parser(
         "inspect",

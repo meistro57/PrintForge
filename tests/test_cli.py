@@ -93,10 +93,17 @@ def test_build_writes_all_artifacts(built):
         "cover": "cover.pdf",
         "cover_spec": "cover-spec.json",
         "report": "build-report.json",
+        "preflight": "preflight.json",
+        "preflight_markdown": "preflight.md",
     }
     assert report["book"] == "print-book"
     assert report["summary"]["errors"] == 0
+    assert report["preflight"]["ready"] is True
     assert set(report["artifacts"]) == {"interior.pdf", "cover.pdf", "cover-spec.json"}
+    preflight = json.loads((built / "preflight.json").read_text())
+    assert preflight["summary"]["ready"] is True
+    assert preflight["artifacts"]["interior.pdf"]["pages"] == metadata["print"]["page_count"]
+    assert (built / "preflight.md").read_text().startswith("# Print preflight: print-book")
 
 
 @pytest.mark.pdf

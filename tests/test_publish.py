@@ -36,8 +36,13 @@ def test_report_matches_the_written_artifacts(builds):
     base, first, _second = builds
     report = json.loads((base / "one" / "build-report.json").read_text())
     manifest = json.loads((base / "one" / "metadata.json").read_text())
-    assert report["summary"] == {"errors": 0, "warnings": 0, "infos": 0}
-    assert report["diagnostics"] == []
+    assert report["summary"] == {"errors": 0, "warnings": 0, "infos": 3}
+    assert {item["stage"] for item in report["diagnostics"]} == {"preflight"}
+    assert report["preflight"] == {
+        "ready": True,
+        "json": "preflight.json",
+        "markdown": "preflight.md",
+    }
     assert report["artifacts"]["interior.pdf"]["sha256"] == manifest["hashes"]["interior.pdf"]
     assert report["artifacts"]["cover.pdf"]["sha256"] == manifest["hashes"]["cover.pdf"]
     assert (

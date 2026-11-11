@@ -27,6 +27,7 @@ printforge settings tests/fixtures/minimal-book --trim 6x9   # JSON to stdout
 printforge inspect tests/fixtures/print-book                 # JSON, no rendering
 printforge build tests/fixtures/print-book --output build/print-book
 printforge build tests/fixtures/print-book --output build/print-book --force
+printforge check build/print-book                            # rewrite preflight reports
 printforge discover tests/fixtures/bookforge-root
 ```
 
@@ -66,8 +67,8 @@ book dir (read-only source)
   layout/    -> LayoutPlan + CSS Paged Media stylesheet
   render/    -> front matter, contents, interior PDF + page/heading map, fonts
   cover/     -> cover geometry, cover-spec.json, full-wrap cover PDF
+  preflight/ -> artifact inspection: PDF facts, fonts, images, manifest, reports
   publish/   -> one-command build: artifacts, metadata.json, build-report.json
-  (preflight, #11, not written yet) -> preflight report
 ```
 
 | Package | Responsibility |
@@ -81,6 +82,7 @@ book dir (read-only source)
 | `printforge/layout/` | Page geometry, section policies, gutter convergence, CSS |
 | `printforge/render/` | HTML contract, front matter/contents, WeasyPrint adapter, PDF facts |
 | `printforge/cover/` | Full-wrap cover geometry, `cover-spec.json`, `cover.pdf` |
+| `printforge/preflight/` | Finished-artifact checks, `preflight.json`/`preflight.md`, image placement audit |
 | `printforge/publish/` | Staged end-to-end build, artifact commit, manifest and report |
 | `printforge/fsutil.py` | Atomic file writes (temp file + `os.replace`, creates parents) |
 | `printforge/units.py` | `Length`: exact rational inches, unit-required parsing |
@@ -88,8 +90,9 @@ book dir (read-only source)
 | `printforge/diagnostics.py` | Non-fatal `Diagnostic` findings with stable rule IDs |
 
 Cross-cutting contract: `docs/ARCHITECTURE.md` is the overview; `docs/BUILD.md`,
-`docs/RENDERING.md`, `docs/FRONT_MATTER.md` and `docs/COVER.md` are the stage
-contracts. Trust the package tree above when they disagree.
+`docs/RENDERING.md`, `docs/FRONT_MATTER.md`, `docs/COVER.md` and
+`docs/PREFLIGHT.md` are the stage contracts. Trust the package tree above when
+they disagree.
 
 ## Conventions you must follow
 
@@ -101,8 +104,9 @@ Include `hint=` for anything a user can fix.
 
 **Diagnostics, not silent drops.** Non-fatal problems are recorded in `Diagnostics`
 with a `PREFIX-UPPER-HYPHEN` `rule_id` and a severity. Existing prefixes: `IMPORT-`,
-`DOC-`, `KDP-`, `RENDER-`. Tests assert specific IDs, so reuse rather than rename.
-Every stage takes/produces diagnostics instead of logging and continuing silently.
+`DOC-`, `KDP-`, `RENDER-`, `COVER-`, `PREFLIGHT-`. Tests assert specific IDs, so
+reuse rather than rename. Every stage takes/produces diagnostics instead of logging
+and continuing silently.
 
 **Immutability and determinism.** Models are `@dataclass(frozen=True, slots=True)`
 with tuples, not lists. The same input must produce equal output objects. Serialized
@@ -167,15 +171,16 @@ straight vs curly quotes are legitimate book content. `ruff format` is separate 
 
 Every stage is implemented and wired: `printforge build` imports, resolves, renders
 the interior with front matter and contents, checks the provider's finished-book
-rules, renders the cover, writes `metadata.json` + `build-report.json`, and swaps the
-result into place. `inspect` reports input/settings/diagnostics without rendering and
-exits 7 on ERROR diagnostics; `discover` lists books under a BookForge checkout.
+rules, renders the cover, writes `metadata.json`, runs preflight against the
+staged artifacts and writes `build-report.json` + `preflight.json`/`preflight.md`
+before swapping the result into place. `inspect` reports input/settings/diagnostics
+without rendering and exits 7 on ERROR diagnostics; `check` re-runs preflight on an
+existing output directory; `discover` lists books under a BookForge checkout.
 
 Pipeline slices: #1 bootstrap, #2 importer, #3 settings, #4 document model, #5 KDP
 profile, #6 layout, #7 interior renderer, #8 front matter + TOC, #9 cover, #10 build
-CLI, #11 preflight, #12 regression suite. Remaining work is #11/#12. Match that
-structure: new capability = new module + tests + docs, not edits that blur stage
-boundaries.
+CLI, #11 preflight, #12 end-to-end regression suite. All v0.1 slices are wired;
+new capability = new module + tests + docs, not edits that blur stage boundaries.
 
 Build one book from Python (same engine as the CLI):
 
@@ -198,7 +203,8 @@ must leave the previous output byte-for-byte intact.
 
 - Tests are per-stage: `test_importer`, `test_settings`, `test_document`, `test_kdp`,
   `test_layout`, `test_units`, `test_render_html`, `test_frontmatter`,
-  `test_interior`, `test_cover`, `test_publish`, `test_cli`, plus contract tests in
+  `test_interior`, `test_cover`, `test_preflight`, `test_publish`, `test_cli`, plus
+  the end-to-end `test_e2e_regression.py` and contract tests in
   `test_conventions.py`.
 - Fixtures in `tests/fixtures/`: `minimal-book` (quick start), `markdown-book` (parser
   coverage + golden snapshot), `bookforge-root` (multi-book checkout layout),
@@ -221,5 +227,10 @@ must leave the previous output byte-for-byte intact.
 - `docs/LAYOUT.md` — recto/verso margins, gutter convergence, named page runs, the
   HTML contract renderers must emit.
 - `docs/DOCUMENT_MODEL.md` — Markdown-to-model mapping, HTML/image/link safety policy.
+- `docs/PREFLIGHT.md` — preflight rule IDs, report schema and manual checks.
+- `docs/QUICKSTART.md` — fresh-clone install, build, check and output tour.
+- `docs/BOOKFORGE_IMPORT.md` — source convention, field mapping, asset safety.
+- `docs/KDP_WORKFLOW.md` — upload fields, previewer checklist, known limitations.
+- `docs/TROUBLESHOOTING.md` — native libraries, fonts, permissions, preflight errors.
 - `docs/providers/KDP.md` — KDP numbers and their official sources.
 - `docs/INSTALL.md` — native prerequisites per distro.
