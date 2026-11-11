@@ -11,6 +11,7 @@ from pathlib import Path
 
 from printforge.diagnostics import Diagnostic
 from printforge.providers.base import PageSize
+from printforge.units import Length
 
 #: Page label in the book's own sequence: lower roman before the main matter,
 #: decimal from the page where numbering restarts. Part dividers and display
@@ -49,6 +50,7 @@ class RenderResult:
     path: Path
     page_count: int
     size: PageSize
+    inside_margin: Length  # gutter the pages were laid out with
     headings: tuple[HeadingLocation, ...]
     toc: tuple[TocEntry, ...]
     fonts: tuple[str, ...]

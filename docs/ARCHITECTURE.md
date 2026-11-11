@@ -50,6 +50,7 @@ BookForge stays untouched:
         layout/               # pagination, typography, page geometry, CSS
         render/               # front matter, contents, semantic document -> interior PDF
         cover/                # full-wrap cover geometry, spec and PDF
+        publish/              # end-to-end build: artifacts, metadata, report
         units.py              # exact lengths; fsutil.py atomic writes; errors.py, diagnostics.py, log.py
       docs/ARCHITECTURE.md    # this file
       docs/RENDERING.md       # renderer contract, determinism, diagnostics
@@ -57,13 +58,14 @@ BookForge stays untouched:
 
 ## Modules
 
-1. **CLI** — printforge build <book_dir> --provider kdp (and --provider bookvault).
-   Discovers books by the same glob convention as BookForge. Only `settings` is
-   implemented so far; `build` is wired by the publishing engine (#10).
+1. **CLI** — `printforge build`, `inspect`, `settings` and `discover`. The build
+   command writes `interior.pdf`, `cover.pdf`, `cover-spec.json`, `metadata.json`
+   and `build-report.json`; it never uploads. See [docs/BUILD.md](BUILD.md).
 
-2. **Publishing engine** (to be added with #10) — orchestrates: load book,
-   resolve print profile, parse, paginate, render interior, render cover, emit
-   provider manifest. Provider-agnostic core.
+2. **Publishing engine** (publish/) — orchestrates: load book, resolve print
+   profile, parse, paginate, render interior, check finished-book rules, render
+   cover, emit provider manifest and report, then publish atomically.
+   Provider-agnostic core.
 
 3. **Provider profiles** (providers/) — pluggable. Each provider contributes its
    trim/bleed/margin constraints, cover template, and metadata schema. Start with
@@ -111,5 +113,6 @@ BookForge stays untouched:
 - [x] Interior PDF rendering
 - [x] Title/front matter and table of contents generation
 - [x] Cover spec output (full-wrap cover.pdf)
-- [ ] Preflight report and publishing engine / build CLI
+- [x] Publishing engine and `printforge build` CLI
+- [ ] Preflight report
 

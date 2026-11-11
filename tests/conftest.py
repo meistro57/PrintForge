@@ -13,3 +13,13 @@ def fixtures_dir() -> Path:
 @pytest.fixture
 def minimal_book() -> Path:
     return FIXTURES / "minimal-book"
+
+
+@pytest.fixture
+def print_book() -> Path:
+    return FIXTURES / "print-book"
+
+
+@pytest.fixture
+def bookforge_root() -> Path:
+    return FIXTURES / "bookforge-root"

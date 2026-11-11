@@ -11,10 +11,13 @@ from pathlib import Path
 from printforge import __version__
 from printforge.config import resolve_print_job
 from printforge.config.cli_overrides import add_settings_arguments, overrides_from_args
-from printforge.errors import ExitCode, NotImplementedYetError, PrintForgeError
-from printforge.importer import load_book
+from printforge.diagnostics import Severity
+from printforge.document import parse_book
+from printforge.errors import ExitCode, PrintForgeError
+from printforge.importer import discover_books, load_book
 from printforge.log import configure, get_logger
-from printforge.providers import provider_names
+from printforge.providers import get_provider
+from printforge.publish import build_book
 
 log = get_logger("cli")
 
@@ -25,6 +28,15 @@ files. It never modifies the source manuscript and never uploads anything.
 """
 
 EPILOG = """\
+PrintForge only writes local files for manual upload. It does not talk to
+Amazon or any other print-on-demand service.
+
+examples:
+  printforge settings tests/fixtures/print-book --trim 6x9
+  printforge inspect tests/fixtures/print-book
+  printforge build tests/fixtures/print-book --output build/print-book
+  printforge discover /path/to/BookForge
+
 exit codes:
   0 ok            1 internal error   2 usage error      3 input error
   4 config error  5 provider constraint violated         6 render error
@@ -33,12 +45,77 @@ exit codes:
 
 
 def _cmd_build(args: argparse.Namespace) -> int:
-    # Placeholder until the end-to-end pipeline lands (issue #10). It must not
-    # produce any artifact that could be mistaken for a real build.
-    raise NotImplementedYetError(
-        f"'build' is not implemented yet; nothing was written for {args.book_dir}",
-        hint="the end-to-end build pipeline is tracked in issue #10",
+    build_book(
+        args.book_dir,
+        config_path=args.config,
+        cli_overrides=overrides_from_args(args),
+        force=args.force,
     )
+    return int(ExitCode.OK)
+
+
+def _cmd_inspect(args: argparse.Namespace) -> int:
+    book = load_book(args.book_dir)
+    job = resolve_print_job(book, config_path=args.config, cli_overrides=overrides_from_args(args))
+    document = parse_book(book)
+    provider = get_provider(job.provider)
+    staged = (
+        [("import", item) for item in book.diagnostics]
+        + [("document", item) for item in document.diagnostics]
+        + [("provider", item) for item in provider.validate_settings(job.settings)]
+    )
+    payload = {
+        "book": {
+            "slug": book.slug,
+            "title": book.title,
+            "author": book.author,
+            "subtitle": book.subtitle,
+            "order": book.order,
+            "chapters": len(book.chapters),
+        },
+        "chapters": [
+            {
+                "id": chapter.id,
+                "title": chapter.title,
+                "kind": str(chapter.kind),
+                "source": chapter.source,
+                "number": chapter.number,
+                "part_number": chapter.part_number,
+                "part_title": chapter.part_title,
+                "headings": len(chapter.headings),
+                "blocks": len(chapter.blocks),
+            }
+            for chapter in document.chapters
+        ],
+        "document": {
+            "chapters": len(document.chapters),
+            "headings": sum(len(chapter.headings) for chapter in document.chapters),
+            "images": len(document.images),
+        },
+        "provider": {
+            "name": provider.name,
+            "display_name": provider.display_name,
+            "sources": [source.to_dict() for source in provider.sources],
+        },
+        "settings": job.to_dict(),
+        "diagnostics": [{"stage": stage, **item.to_dict()} for stage, item in staged],
+    }
+    json.dump(payload, sys.stdout, indent=2, sort_keys=False)
+    sys.stdout.write("\n")
+    has_errors = any(item.severity is Severity.ERROR for _stage, item in staged)
+    return int(ExitCode.PREFLIGHT if has_errors else ExitCode.OK)
+
+
+def _cmd_discover(args: argparse.Namespace) -> int:
+    root = Path(args.root)
+    base = root.expanduser().resolve()
+    for path in discover_books(root):
+        try:
+            shown = path.resolve().relative_to(base)
+        except ValueError:  # pragma: no cover - a book outside the search root
+            shown = path
+        sys.stdout.write(shown.as_posix() + "\n")
+    return int(ExitCode.OK)
 
 
 def _cmd_settings(args: argparse.Namespace) -> int:
@@ -66,14 +143,44 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = sub.add_parser(
         "build",
-        help="build print files for a book directory (placeholder; see #10)",
-        description="Build print files for a book directory. NOT IMPLEMENTED YET (issue #10).",
+        help="build interior.pdf, cover.pdf, cover-spec.json, metadata.json and a report",
+        description=(
+            "Build print-ready files for a book directory. The output directory "
+            "receives interior.pdf, cover.pdf, cover-spec.json, metadata.json and "
+            "build-report.json. Existing builds are only replaced with --force."
+        ),
     )
     build.add_argument("book_dir", type=Path, help="directory containing book.json")
+    add_settings_arguments(build)
     build.add_argument(
-        "--provider", default="kdp", choices=provider_names(), help="POD provider profile"
+        "--force",
+        action="store_true",
+        help="replace a previous PrintForge build in the output directory",
     )
     build.set_defaults(func=_cmd_build)
+
+    inspect = sub.add_parser(
+        "inspect",
+        help="report book, chapters, settings and diagnostics as JSON (no rendering)",
+        description=(
+            "Validate a manuscript and print a JSON report of the book, its chapters, "
+            "the resolved print settings and any diagnostics. Nothing is rendered."
+        ),
+    )
+    inspect.add_argument("book_dir", type=Path, help="directory containing book.json")
+    add_settings_arguments(inspect)
+    inspect.set_defaults(func=_cmd_inspect)
+
+    discover = sub.add_parser(
+        "discover",
+        help="list book directories under a BookForge checkout",
+        description=(
+            "Find book directories by the BookForge convention "
+            "(src/content/books/**/book.json) and print each path relative to ROOT."
+        ),
+    )
+    discover.add_argument("root", type=Path, help="BookForge checkout (or a books directory)")
+    discover.set_defaults(func=_cmd_discover)
 
     settings = sub.add_parser(
         "settings",

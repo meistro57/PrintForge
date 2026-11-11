@@ -19,8 +19,9 @@ result.size  # measured page box
 result.diagnostics
 ```
 
-The caller passes the **finished interior page count**. The spine, the full
-width and the page-count-dependent safe areas all follow from it.
+The caller passes the **finished interior page count** (`printforge build` uses
+the rendered interior automatically). The spine, the full width and the
+page-count-dependent safe areas all follow from it.
 
 ## Geometry
 

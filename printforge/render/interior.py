@@ -158,6 +158,7 @@ class InteriorPdfBuilder:
             path=output_path,
             page_count=facts.page_count,
             size=facts.size,
+            inside_margin=layout.geometry.inside,
             headings=locations,
             toc=(),
             fonts=tuple(sorted({font.base_name for font in facts.fonts})),

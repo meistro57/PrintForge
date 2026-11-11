@@ -12,7 +12,8 @@ result.toc  # ((TocEntry(id, text, level, folio, kind), ...)
 ```
 
 `build_interior_pdf` (in `printforge/render/build.py`) is the entry point that
-assembles front matter + contents + manuscript and resolves the page numbers.
+assembles front matter + contents + manuscript and resolves the page numbers;
+`printforge build` / `build_book` call it for you.
 
 ## Pages
 

@@ -24,7 +24,10 @@ ruff format --check .               # formatting IS enforced, unlike most repos
 printforge --help
 python -m printforge --version
 printforge settings tests/fixtures/minimal-book --trim 6x9   # JSON to stdout
-printforge build tests/fixtures/minimal-book                 # placeholder: exits 9
+printforge inspect tests/fixtures/print-book                 # JSON, no rendering
+printforge build tests/fixtures/print-book --output build/print-book
+printforge build tests/fixtures/print-book --output build/print-book --force
+printforge discover tests/fixtures/bookforge-root
 ```
 
 - `pytest` needs the `pdf` native libs; `.venv` created without them fails
@@ -62,7 +65,9 @@ book dir (read-only source)
   providers/ -> ProviderProfile: vendor rules (trim, gutters, page counts, spine, cover)
   layout/    -> LayoutPlan + CSS Paged Media stylesheet
   render/    -> front matter, contents, interior PDF + page/heading map, fonts
-  (publisher/preflight, #9-#11, not written yet) -> manifest, cover, reports
+  cover/     -> cover geometry, cover-spec.json, full-wrap cover PDF
+  publish/   -> one-command build: artifacts, metadata.json, build-report.json
+  (preflight, #11, not written yet) -> preflight report
 ```
 
 | Package | Responsibility |
@@ -76,14 +81,15 @@ book dir (read-only source)
 | `printforge/layout/` | Page geometry, section policies, gutter convergence, CSS |
 | `printforge/render/` | HTML contract, front matter/contents, WeasyPrint adapter, PDF facts |
 | `printforge/cover/` | Full-wrap cover geometry, `cover-spec.json`, `cover.pdf` |
+| `printforge/publish/` | Staged end-to-end build, artifact commit, manifest and report |
 | `printforge/fsutil.py` | Atomic file writes (temp file + `os.replace`, creates parents) |
 | `printforge/units.py` | `Length`: exact rational inches, unit-required parsing |
 | `printforge/errors.py` | Exception hierarchy mapped to stable exit codes |
 | `printforge/diagnostics.py` | Non-fatal `Diagnostic` findings with stable rule IDs |
 
-Cross-cutting contract: `docs/ARCHITECTURE.md`'s module list still describes a
-`publisher/` package that does not exist yet. Trust the package tree above over
-that document; `docs/RENDERING.md` is the renderer's contract.
+Cross-cutting contract: `docs/ARCHITECTURE.md` is the overview; `docs/BUILD.md`,
+`docs/RENDERING.md`, `docs/FRONT_MATTER.md` and `docs/COVER.md` are the stage
+contracts. Trust the package tree above when they disagree.
 
 ## Conventions you must follow
 
@@ -159,55 +165,53 @@ straight vs curly quotes are legitimate book content. `ruff format` is separate 
 
 ## Current implementation state (important)
 
-Only the `settings` subcommand does real work. `build` raises
-`NotImplementedYetError` (exit 9) and deliberately writes nothing — a test asserts the
-CWD and manuscript are untouched. Do not "fix" that placeholder by emitting files; the
-end-to-end pipeline is tracked in issue #10. The renderer, `parse_book()` and
-`KDP.validate_settings()` are implemented and tested but not yet called from the CLI.
+Every stage is implemented and wired: `printforge build` imports, resolves, renders
+the interior with front matter and contents, checks the provider's finished-book
+rules, renders the cover, writes `metadata.json` + `build-report.json`, and swaps the
+result into place. `inspect` reports input/settings/diagnostics without rendering and
+exits 7 on ERROR diagnostics; `discover` lists books under a BookForge checkout.
 
 Pipeline slices: #1 bootstrap, #2 importer, #3 settings, #4 document model, #5 KDP
 profile, #6 layout, #7 interior renderer, #8 front matter + TOC, #9 cover, #10 build
-CLI, #11 preflight, #12 regression suite. Match that structure: new capability = new
-module + tests + docs, not edits that blur stage boundaries.
+CLI, #11 preflight, #12 regression suite. Remaining work is #11/#12. Match that
+structure: new capability = new module + tests + docs, not edits that blur stage
+boundaries.
 
-Render one book by hand (no CLI yet):
+Build one book from Python (same engine as the CLI):
 
 ```python
-job = resolve_print_job(load_book(path))
-doc = parse_book(load_book(path))
-result = build_interior_pdf(
-    doc, job.settings, get_provider("kdp"), Path("interior.pdf"), metadata=job.metadata
-)
-cover = build_cover(
-    job.settings,
-    get_provider("kdp"),
-    result.page_count,  # always the finished interior page count
-    pdf_path=Path("cover.pdf"),
-    spec_path=Path("cover-spec.json"),
-    metadata=job.metadata,
-    config_dir=job.config_dir,
-)
+result = build_book(book_dir, output_dir=Path("build/my-book"), force=False)
+result.interior.page_count, result.cover.spec["spine"]["width"], result.report
 ```
 
-`build_interior_pdf` generates front matter + contents and resolves folios with a
-bounded multipass loop; `InteriorPdfBuilder.render` is the single-pass primitive
-(take a `LayoutPlan`, no front matter) used by tests and by that loop. The cover
-must take its page count from `result.page_count`.
+`build_book` is the only place that assembles artifacts: it stages in a hidden
+directory, validates provider constraints for the finished book, and publishes with
+an atomic directory swap. Do not re-implement that flow in the CLI or in tests;
+`build_interior_pdf` (interior) and `build_cover` (cover) are the lower-level
+primitives.
+
+Build output rules: never overwrite a previous build without `force`, never delete
+files PrintForge did not write, and never write into the manuscript. A failing build
+must leave the previous output byte-for-byte intact.
 
 ## Testing
 
 - Tests are per-stage: `test_importer`, `test_settings`, `test_document`, `test_kdp`,
   `test_layout`, `test_units`, `test_render_html`, `test_frontmatter`,
-  `test_interior`, `test_cover`, plus contract tests in `test_conventions.py`.
+  `test_interior`, `test_cover`, `test_publish`, `test_cli`, plus contract tests in
+  `test_conventions.py`.
 - Fixtures in `tests/fixtures/`: `minimal-book` (quick start), `markdown-book` (parser
   coverage + golden snapshot), `bookforge-root` (multi-book checkout layout),
   `print-book` (generated 45-page manuscript plus `print.json` metadata and cover
   artwork for real PDF renders). Tests that mutate a book copy it to `tmp_path`
   first (`shutil.copytree`).
-- `conftest.py` exposes `fixtures_dir` and `minimal_book`; tests frequently build
-  settings with `resolve_print_job(load_book(path), cli_overrides={...}).settings`.
+- `conftest.py` exposes `fixtures_dir`, `minimal_book`, `print_book` and
+  `bookforge_root`; tests frequently build settings with
+  `resolve_print_job(load_book(path), cli_overrides={...}).settings`. Use
+  `print_book` for anything that renders; `minimal-book` is below KDP's 24-page
+  minimum.
 - Test rule IDs and exact user-facing messages rather than tracebacks; assert exit
-  codes by enum (`ExitCode.NOT_IMPLEMENTED`), not integers.
+  codes by enum (`ExitCode.CONSTRAINT`, `ExitCode.OUTPUT`, ...), not integers.
 - The `pdf` marker is registered in `pyproject.toml`; use it for anything that renders
   a real PDF. There is no coverage threshold or typechecker in CI.
 
